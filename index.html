@@ -28,6 +28,7 @@
         let unsubscribe = null;
         let entriesRef = null;
         let positiveChart, conversionChart; // Moved chart variables to a global scope
+        let allEntriesData = []; // Global variable to store all entries for consistent chart updates
 
         /**
          * Signs in the user using a custom token or anonymously and sets up Firestore.
@@ -70,8 +71,13 @@
                 querySnapshot.forEach((doc) => {
                     entries.push({ id: doc.id, ...doc.data() });
                 });
-                renderTable(entries);
-                updateCharts(entries);
+                
+                // Store the fetched data in the global variable
+                allEntriesData = entries;
+
+                // Render the table and update the charts using the fresh data
+                renderTable(allEntriesData);
+                updateCharts(allEntriesData);
                 document.getElementById('loading-message').classList.add('hidden');
             }, (error) => {
                 console.error("Erro ao obter dados do Firestore:", error);
@@ -326,23 +332,8 @@
 
             // Event listener for report filter change
             reportSelect.addEventListener('change', () => {
-                if (dataTableBody.children.length > 0) {
-                    const allEntries = [];
-                    // Simple way to get data from the table to re-render charts
-                    Array.from(dataTableBody.children).forEach(row => {
-                        allEntries.push({
-                            date: row.children[0].textContent,
-                            baseName: row.children[1].textContent,
-                            deliveryMethod: row.children[2].textContent,
-                            totalDisparos: parseInt(row.children[3].textContent, 10),
-                            respostasPositivas: parseInt(row.children[4].textContent, 10),
-                            respostasNegativas: parseInt(row.children[5].textContent, 10),
-                            conversionRate: parseFloat(row.children[6].textContent),
-                            evidence: row.children[7].querySelector('a') ? row.children[7].querySelector('a').href : ''
-                        });
-                    });
-                     updateCharts(allEntries);
-                }
+                // Call updateCharts with the global data stored from Firestore
+                updateCharts(allEntriesData);
             });
         });
     </script>
