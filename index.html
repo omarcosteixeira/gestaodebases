@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Bases</title>
+    <!-- Inclui Tailwind CSS para estilização moderna e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inclui a biblioteca Chart.js para criar gráficos dinâmicos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        let unsubscribe = null;
+        let entriesRef = null;
+        let positiveChart, conversionChart; // Moved chart variables to a global scope
+
+        /**
+         * Signs in the user using a custom token or anonymously and sets up Firestore.
+         */
+        const setupFirebase = async () => {
+            try {
+                // Use custom auth token if available, otherwise sign in anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                userId = auth.currentUser.uid;
+                
+                // Define the Firestore collection path for the current user
+                // This path ensures data is private to the user per security rules
+                entriesRef = collection(db, `artifacts/${appId}/users/${userId}/base_entries`);
+                
+                // Start listening for real-time updates to the data
+                listenForData();
+
+            } catch (error) {
+                console.error("Erro ao autenticar no Firebase ou configurar o Firestore:", error);
+                document.getElementById('loading-message').textContent = 'Erro ao carregar a ferramenta. Por favor, tente novamente.';
+            }
+        };
+
+        /**
+         * Listens for real-time data changes in Firestore.
+         * Updates the UI (table and charts) whenever data changes.
+         */
+        const listenForData = () => {
+            if (unsubscribe) unsubscribe(); // Detach any existing listener
+
+            const q = query(entriesRef);
+
+            // Set up the real-time listener
+            unsubscribe = onSnapshot(q, (querySnapshot) => {
+                const entries = [];
+                querySnapshot.forEach((doc) => {
+                    entries.push({ id: doc.id, ...doc.data() });
+                });
+                renderTable(entries);
+                updateCharts(entries);
+                document.getElementById('loading-message').classList.add('hidden');
+            }, (error) => {
+                console.error("Erro ao obter dados do Firestore:", error);
+                document.getElementById('loading-message').textContent = 'Erro ao carregar os dados. Verifique sua conexão.';
+            });
+        };
+
+        /**
+         * Saves a new entry to Firestore.
+         * @param {Object} entryData - The data to be saved.
+         */
+        const saveEntry = async (entryData) => {
+            try {
+                await addDoc(entriesRef, entryData);
+                console.log("Documento salvo com sucesso!");
+            } catch (e) {
+                console.error("Erro ao adicionar documento: ", e);
+            }
+        };
+
+        /**
+         * Renders the data table with the provided entries.
+         * @param {Array} entries - An array of entry objects.
+         */
+        const renderTable = (entries) => {
+            const dataTableBody = document.getElementById('dataTableBody');
+            if (!dataTableBody) return;
+
+            dataTableBody.innerHTML = '';
+            // Sort entries by date in descending order for display
+            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            entries.forEach(entry => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.baseName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.deliveryMethod}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.totalDisparos}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.respostasPositivas}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.respostasNegativas}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.conversionRate.toFixed(2)}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${entry.evidence ? `<a href="${entry.evidence}" target="_blank" class="text-blue-500 hover:underline">Ver Evidência</a>` : 'N/A'}
+                    </td>
+                `;
+                dataTableBody.appendChild(row);
+            });
+        };
+
+        /**
+         * Updates the charts and the summary stats based on the provided data and selected time frame.
+         * @param {Array} entries - An array of entry objects.
+         */
+        const updateCharts = (entries) => {
+            const reportSelect = document.getElementById('reportSelect');
+            if (!reportSelect) return;
+
+            const timeFrame = reportSelect.value;
+            const aggregatedData = aggregateData(entries, timeFrame);
+
+            const labels = Object.keys(aggregatedData);
+            const positiveData = labels.map(label => aggregatedData[label].respostasPositivas);
+            const negativeData = labels.map(label => aggregatedData[label].respostasNegativas);
+            const conversionData = labels.map(label => aggregatedData[label].conversionRate);
+            
+            // Calculate and display summary stats for the entire filtered data
+            const totalDisparos = Object.values(aggregatedData).reduce((sum, item) => sum + item.totalDisparos, 0);
+            const totalPositivos = Object.values(aggregatedData).reduce((sum, item) => sum + item.respostasPositivas, 0);
+            const totalNegativos = Object.values(aggregatedData).reduce((sum, item) => sum + item.respostasNegativas, 0);
+            const overallConversionRate = totalDisparos > 0 ? (totalPositivos / totalDisparos) * 100 : 0;
+            
+            document.getElementById('totalDisparosSummary').textContent = totalDisparos;
+            document.getElementById('totalPositivosSummary').textContent = totalPositivos;
+            document.getElementById('totalNegativosSummary').textContent = totalNegativos;
+            document.getElementById('conversionRateSummary').textContent = overallConversionRate.toFixed(2) + '%';
+
+
+            // Get chart contexts
+            const positiveChartCtx = document.getElementById('positiveChart')?.getContext('2d');
+            const conversionChartCtx = document.getElementById('conversionChart')?.getContext('2d');
+
+            if (!positiveChartCtx || !conversionChartCtx) {
+                console.error("Canvas element not found for charts.");
+                return;
+            }
+
+            // Destroy previous charts if they exist to prevent duplicates
+            if (positiveChart) positiveChart.destroy();
+            if (conversionChart) conversionChart.destroy();
+
+            // Chart for Positives vs Negatives
+            positiveChart = new Chart(positiveChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Respostas Positivas',
+                        data: positiveData,
+                        backgroundColor: 'rgba(52, 211, 153, 0.6)', // Green
+                        borderColor: 'rgba(52, 211, 153, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'Respostas Negativas',
+                        data: negativeData,
+                        backgroundColor: 'rgba(239, 68, 68, 0.6)', // Red
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Respostas Positivas vs Negativas'
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            // Chart for Conversion Rate
+            conversionChart = new Chart(conversionChartCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Taxa de Conversão (%)',
+                        data: conversionData,
+                        borderColor: 'rgba(59, 130, 246, 1)', // Blue
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Evolução da Taxa de Conversão'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        /**
+         * Aggregates the data based on the selected time frame (daily, weekly, monthly, yearly).
+         * @param {Array} entries - An array of entry objects.
+         * @param {string} timeFrame - 'daily', 'weekly', 'monthly', or 'yearly'.
+         * @returns {Object} Aggregated data.
+         */
+        const aggregateData = (entries, timeFrame) => {
+            const aggregated = {};
+            
+            // Group entries by date, week, month, or year
+            entries.forEach(entry => {
+                const date = new Date(entry.date);
+                let key = entry.date; // Daily
+
+                if (timeFrame === 'weekly') {
+                    const startOfWeek = new Date(date);
+                    startOfWeek.setDate(date.getDate() - date.getDay());
+                    key = startOfWeek.toISOString().split('T')[0];
+                } else if (timeFrame === 'monthly') {
+                    key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                } else if (timeFrame === 'yearly') {
+                    key = `${date.getFullYear()}`;
+                }
+
+                if (!aggregated[key]) {
+                    aggregated[key] = {
+                        totalDisparos: 0,
+                        respostasPositivas: 0,
+                        respostasNegativas: 0
+                    };
+                }
+                aggregated[key].totalDisparos += entry.totalDisparos;
+                aggregated[key].respostasPositivas += entry.respostasPositivas;
+                aggregated[key].respostasNegativas += entry.respostasNegativas;
+            });
+            
+            // Calculate final metrics for each group
+            for (const key in aggregated) {
+                const group = aggregated[key];
+                group.conversionRate = group.totalDisparos > 0 ? (group.respostasPositivas / group.totalDisparos) * 100 : 0;
+            }
+            
+            // Sort keys chronologically
+            const sortedKeys = Object.keys(aggregated).sort((a, b) => new Date(a) - new Date(b));
+            const sortedAggregated = {};
+            sortedKeys.forEach(key => {
+                sortedAggregated[key] = aggregated[key];
+            });
+
+            return sortedAggregated;
+        };
+
+
+        // UI Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            setupFirebase();
+
+            const entryForm = document.getElementById('entryForm');
+            const dataTableBody = document.getElementById('dataTableBody');
+            const reportSelect = document.getElementById('reportSelect');
+
+            // Set today's date automatically
+            document.getElementById('dateInput').valueAsDate = new Date();
+
+            /**
+             * Handles form submission to save a new entry.
+             */
+            entryForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const totalDisparos = parseInt(document.getElementById('totalDisparos').value, 10) || 0;
+                const respostasPositivas = parseInt(document.getElementById('respostasPositivas').value, 10) || 0;
+                
+                const entryData = {
+                    date: document.getElementById('dateInput').value,
+                    baseName: document.getElementById('baseNameInput').value,
+                    deliveryMethod: document.getElementById('deliveryMethodSelect').value,
+                    totalDisparos: totalDisparos,
+                    respostasPositivas: respostasPositivas,
+                    respostasNegativas: parseInt(document.getElementById('respostasNegativas').value, 10) || 0,
+                    conversionRate: totalDisparos > 0 ? (respostasPositivas / totalDisparos) * 100 : 0,
+                    evidence: document.getElementById('evidenceInput').value
+                };
+                
+                await saveEntry(entryData);
+                entryForm.reset();
+                document.getElementById('dateInput').valueAsDate = new Date();
+            });
+
+            // Event listener for report filter change
+            reportSelect.addEventListener('change', () => {
+                if (dataTableBody.children.length > 0) {
+                    const allEntries = [];
+                    // Simple way to get data from the table to re-render charts
+                    Array.from(dataTableBody.children).forEach(row => {
+                        allEntries.push({
+                            date: row.children[0].textContent,
+                            baseName: row.children[1].textContent,
+                            deliveryMethod: row.children[2].textContent,
+                            totalDisparos: parseInt(row.children[3].textContent, 10),
+                            respostasPositivas: parseInt(row.children[4].textContent, 10),
+                            respostasNegativas: parseInt(row.children[5].textContent, 10),
+                            conversionRate: parseFloat(row.children[6].textContent),
+                            evidence: row.children[7].querySelector('a') ? row.children[7].querySelector('a').href : ''
+                        });
+                    });
+                     updateCharts(allEntries);
+                }
+            });
+        });
+    </script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans p-4 md:p-8 min-h-screen flex items-center justify-center">
+
+    <!-- Main Container -->
+    <div class="w-full max-w-6xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-xl space-y-8">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-6">
+            Gestão de Bases de Contato
+        </h1>
+
+        <!-- Loading Message -->
+        <div id="loading-message" class="text-center text-gray-500 font-medium">
+            Carregando a ferramenta, por favor aguarde...
+        </div>
+
+        <!-- Section for Data Input Form -->
+        <div class="space-y-6">
+            <h2 class="text-2xl font-semibold text-gray-700 border-b pb-2">Adicionar Novo Envio</h2>
+            <form id="entryForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Date Input -->
+                <div>
+                    <label for="dateInput" class="block text-sm font-medium text-gray-700">Data do Envio</label>
+                    <input type="date" id="dateInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                </div>
+                <!-- Base Name Input -->
+                <div>
+                    <label for="baseNameInput" class="block text-sm font-medium text-gray-700">Nome da Base</label>
+                    <input type="text" id="baseNameInput" placeholder="Ex: Leads Junho 2024" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                </div>
+                <!-- Delivery Method Select -->
+                <div>
+                    <label for="deliveryMethodSelect" class="block text-sm font-medium text-gray-700">Meio de Disparo</label>
+                    <select id="deliveryMethodSelect" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                        <option value="Email">Email</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Telefone">Telefone</option>
+                    </select>
+                </div>
+                <!-- Total Disparos Input -->
+                <div>
+                    <label for="totalDisparos" class="block text-sm font-medium text-gray-700">Quantidade de Disparos</label>
+                    <input type="number" id="totalDisparos" placeholder="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                </div>
+                <!-- Respostas Positivas Input -->
+                <div>
+                    <label for="respostasPositivas" class="block text-sm font-medium text-gray-700">Respostas Positivas</label>
+                    <input type="number" id="respostasPositivas" placeholder="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                </div>
+                <!-- Respostas Negativas Input -->
+                <div>
+                    <label for="respostasNegativas" class="block text-sm font-medium text-gray-700">Respostas Negativas</label>
+                    <input type="number" id="respostasNegativas" placeholder="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                </div>
+                <!-- Evidence Input -->
+                <div class="lg:col-span-3">
+                    <label for="evidenceInput" class="block text-sm font-medium text-gray-700">Evidência (Link)</label>
+                    <input type="url" id="evidenceInput" placeholder="https://link-para-evidencia.com" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                </div>
+                <!-- Submit Button -->
+                <div class="lg:col-span-3 flex justify-center mt-4">
+                    <button type="submit" class="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300 ease-in-out transform hover:scale-105">
+                        Adicionar Registro
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <hr class="border-t border-gray-200 my-8">
+
+        <!-- Section for Reports and Charts -->
+        <div class="space-y-6">
+            <h2 class="text-2xl font-semibold text-gray-700">Relatórios e Análises</h2>
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-gray-600">Filtre seus dados para uma análise mais detalhada:</p>
+                <select id="reportSelect" class="w-full md:w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                    <option value="daily">Diário</option>
+                    <option value="weekly">Semanal</option>
+                    <option value="monthly">Mensal</option>
+                    <option value="yearly">Anual</option>
+                </select>
+            </div>
+            
+            <!-- Summary Stats Section -->
+            <div id="summary-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="bg-blue-50 p-4 rounded-xl shadow-inner">
+                    <div class="text-lg font-bold text-blue-700" id="totalDisparosSummary">0</div>
+                    <div class="text-sm text-gray-500">Total de Disparos</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-xl shadow-inner">
+                    <div class="text-lg font-bold text-green-700" id="totalPositivosSummary">0</div>
+                    <div class="text-sm text-gray-500">Respostas Positivas</div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-xl shadow-inner">
+                    <div class="text-lg font-bold text-red-700" id="totalNegativosSummary">0</div>
+                    <div class="text-sm text-gray-500">Respostas Negativas</div>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-xl shadow-inner">
+                    <div class="text-lg font-bold text-yellow-700" id="conversionRateSummary">0.00%</div>
+                    <div class="text-sm text-gray-500">Taxa de Conversão Geral</div>
+                </div>
+            </div>
+
+            <!-- Charts Container -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-gray-50 p-6 rounded-xl shadow-inner">
+                    <canvas id="positiveChart"></canvas>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl shadow-inner">
+                    <canvas id="conversionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-t border-gray-200 my-8">
+
+        <!-- Section for Data Table -->
+        <div class="space-y-6">
+            <h2 class="text-2xl font-semibold text-gray-700">Histórico de Envios</h2>
+            <div class="overflow-x-auto rounded-lg shadow-md">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome da Base</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meio</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Disparos</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Positivos</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Negativos</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversão (%)</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evidência</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Table rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
