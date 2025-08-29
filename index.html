@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Bases</title>
+    <title>Gestão de Bases Oeste</title>
     <!-- Inclui Tailwind CSS para estilização moderna e responsiva -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inclui a biblioteca Chart.js para criar gráficos dinâmicos -->
@@ -11,71 +11,116 @@
     <!-- Firebase Imports -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, getDoc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables provided by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // IMPORTANTE: COLE SUAS CREDENCIAIS DO FIREBASE AQUI
+        // Você as encontra no console do Firebase, nas configurações do seu projeto web.
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2lF7BPdF7HDs0gfFWwPZDyRy9FYF1Hwo",
+            authDomain: "gestaodebasesoeste.firebaseapp.com",
+            projectId: "gestaodebasesoeste",
+            storageBucket: "gestaodebasesoeste.firebasestorage.app",
+            messagingSenderId: "257255121414",
+            appId: "1:257255121414:web:62b4a3be8435df41315987"
+        };
+        
+        // As variáveis abaixo são usadas apenas no ambiente do Canvas para demonstração.
+        // Para hospedar sua ferramenta, use as credenciais que você copiou acima.
+        const providedFirebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const finalFirebaseConfig = providedFirebaseConfig || firebaseConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : finalFirebaseConfig.projectId;
 
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+        const app = initializeApp(finalFirebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        let userId = null;
+        let currentUserUid = null;
         let unsubscribe = null;
         let entriesRef = null;
-        let positiveChart, conversionChart; // Moved chart variables to a global scope
-        let allEntriesData = []; // Global variable to store all entries for consistent chart updates
+        let userProfileRef = null;
+        let positiveChart, conversionChart;
+        let allEntriesData = [];
+        let userRole = null;
+        let userUnit = null;
+        let hasFullAccess = false;
+        let allUsersData = [];
 
         /**
-         * Signs in the user using a custom token or anonymously and sets up Firestore.
+         * Checks the auth state and initializes the app.
          */
-        const setupFirebase = async () => {
-            try {
-                // Use custom auth token if available, otherwise sign in anonymously
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserUid = user.uid;
+                
+                // Fetch user profile from a public collection for admin access
+                userProfileRef = doc(db, `artifacts/${appId}/public/data/user_profiles`, currentUserUid);
+                const userDoc = await getDoc(userProfileRef);
+
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    userRole = userData.role;
+                    userUnit = userData.unit;
+                    hasFullAccess = userData.hasFullAccess || false; // Default to false
+                    document.getElementById('welcome-message').textContent = `Bem-vindo, ${userData.name || 'Usuário'}!`;
+                    
+                    // Show/Hide admin tools based on role
+                    if (userRole === 'admin') {
+                        document.getElementById('admin-tools-container').classList.remove('hidden');
+                        listenForUsers();
+                    } else {
+                        document.getElementById('admin-tools-container').classList.add('hidden');
+                    }
+                    
+                    document.getElementById('main-app').classList.remove('hidden');
+                    document.getElementById('login-page').classList.add('hidden');
+                    setupDataListening();
+
                 } else {
-                    await signInAnonymously(auth);
+                    // If user profile is not found, log out for security
+                    console.error("User profile not found. Logging out.");
+                    signOut(auth);
                 }
-                userId = auth.currentUser.uid;
-                
-                // Define the Firestore collection path for the current user
-                // This path ensures data is private to the user per security rules
-                entriesRef = collection(db, `artifacts/${appId}/users/${userId}/base_entries`);
-                
-                // Start listening for real-time updates to the data
-                listenForData();
-
-            } catch (error) {
-                console.error("Erro ao autenticar no Firebase ou configurar o Firestore:", error);
-                document.getElementById('loading-message').textContent = 'Erro ao carregar a ferramenta. Por favor, tente novamente.';
+            } else {
+                // User is signed out
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('login-page').classList.remove('hidden');
+                document.getElementById('admin-tools-container').classList.add('hidden');
+                document.getElementById('loading-message').classList.add('hidden');
+                // Clean up data and listeners on logout
+                allEntriesData = [];
+                renderTable([]);
+                updateCharts([]);
+                if (unsubscribe) unsubscribe();
             }
-        };
+        });
 
         /**
-         * Listens for real-time data changes in Firestore.
-         * Updates the UI (table and charts) whenever data changes.
+         * Sets up real-time data listening based on user role and permissions.
          */
-        const listenForData = () => {
+        const setupDataListening = () => {
             if (unsubscribe) unsubscribe(); // Detach any existing listener
 
-            const q = query(entriesRef);
+            entriesRef = collection(db, `artifacts/${appId}/public/data/base_entries`);
+            let q;
+            
+            if (hasFullAccess) {
+                // User has full access, show all data
+                q = query(entriesRef);
+            } else {
+                // Regular user, show only data from their unit
+                q = query(entriesRef, where("unit", "==", userUnit));
+            }
 
-            // Set up the real-time listener
+            // Set up the real-time listener for entries
             unsubscribe = onSnapshot(q, (querySnapshot) => {
                 const entries = [];
                 querySnapshot.forEach((doc) => {
                     entries.push({ id: doc.id, ...doc.data() });
                 });
-                
-                // Store the fetched data in the global variable
                 allEntriesData = entries;
-
-                // Render the table and update the charts using the fresh data
+                populateAgentFilter(allEntriesData);
                 renderTable(allEntriesData);
                 updateCharts(allEntriesData);
                 document.getElementById('loading-message').classList.add('hidden');
@@ -86,16 +131,217 @@
         };
 
         /**
+         * Listens for real-time changes to user profiles.
+         */
+        const listenForUsers = () => {
+            usersRef = collection(db, `artifacts/${appId}/public/data/user_profiles`);
+            onSnapshot(usersRef, (querySnapshot) => {
+                allUsersData = [];
+                const units = new Set();
+                querySnapshot.forEach(doc => {
+                    const userData = doc.data();
+                    allUsersData.push({ id: doc.id, ...userData });
+                    if (userData.unit) {
+                        units.add(userData.unit);
+                    }
+                });
+                unitNames = [...units].sort();
+                populateUnitFilter();
+                renderUserList();
+            }, (error) => {
+                console.error("Erro ao obter perfis de usuário:", error);
+            });
+        };
+
+        /**
+         * Handles user login.
+         */
+        const handleLogin = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                document.getElementById('login-error').textContent = '';
+            } catch (error) {
+                console.error("Erro de login:", error);
+                document.getElementById('login-error').textContent = 'Erro de login. Verifique seu email e senha.';
+            }
+        };
+
+        /**
+         * Handles new user creation (admin only).
+         */
+        const handleCreateUser = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('newEmail').value;
+            const password = document.getElementById('newPassword').value;
+            const name = document.getElementById('newName').value;
+            const unit = document.getElementById('newUnit').value;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const uid = userCredential.user.uid;
+                await setDoc(doc(db, `artifacts/${appId}/public/data/user_profiles`, uid), {
+                    name: name,
+                    email: email,
+                    role: 'user', // Default role is user
+                    unit: unit,
+                    hasFullAccess: false
+                });
+                document.getElementById('create-user-error').textContent = '';
+                alert('Usuário criado com sucesso!');
+                document.getElementById('createUserForm').reset();
+            } catch (error) {
+                console.error("Erro ao criar usuário:", error);
+                document.getElementById('create-user-error').textContent = `Erro ao criar usuário: ${error.message}`;
+            }
+        };
+        
+        /**
+         * Toggles full data access for a user (admin only).
+         */
+        const toggleFullAccess = async (uid, currentAccess) => {
+            try {
+                const userDocRef = doc(db, `artifacts/${appId}/public/data/user_profiles`, uid);
+                await setDoc(userDocRef, { hasFullAccess: !currentAccess }, { merge: true });
+                alert(`Acesso total ${currentAccess ? 'removido' : 'concedido'} para o usuário.`);
+            } catch (error) {
+                console.error("Erro ao alternar acesso total:", error);
+                alert("Erro ao alterar o acesso. Por favor, tente novamente.");
+            }
+        };
+
+        /**
+         * Handles password change for the current user.
+         */
+        const handleChangePassword = async (e) => {
+            e.preventDefault();
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            const passwordError = document.getElementById('password-error');
+            const passwordSuccess = document.getElementById('password-success');
+
+            passwordError.textContent = '';
+            passwordSuccess.textContent = '';
+
+            if (newPassword !== confirmNewPassword) {
+                passwordError.textContent = 'As novas senhas não coincidem.';
+                return;
+            }
+
+            try {
+                // Re-authenticate user before changing password for security
+                const credential = EmailAuthProvider.credential(auth.currentUser.email, oldPassword);
+                await reauthenticateWithCredential(auth.currentUser, credential);
+                
+                await updatePassword(auth.currentUser, newPassword);
+                passwordSuccess.textContent = 'Senha alterada com sucesso!';
+                document.getElementById('changePasswordForm').reset();
+            } catch (error) {
+                console.error("Erro ao alterar senha:", error);
+                passwordError.textContent = 'Erro ao alterar a senha. Verifique a senha antiga.';
+            }
+        };
+        
+        /**
+         * Populates the unit filter for the admin user.
+         */
+        const populateUnitFilter = () => {
+            const unitSelect = document.getElementById('unitFilterSelect');
+            if (!unitSelect || userRole !== 'admin') return;
+            
+            unitSelect.innerHTML = '<option value="all">Todas as Unidades</option>';
+            unitNames.sort().forEach(unit => {
+                const option = document.createElement('option');
+                option.value = unit;
+                option.textContent = unit;
+                unitSelect.appendChild(option);
+            });
+        };
+
+        /**
+         * Renders the list of users in the admin dashboard.
+         */
+        const renderUserList = () => {
+            const userListContainer = document.getElementById('userListContainer');
+            if (!userListContainer) return;
+            
+            userListContainer.innerHTML = '';
+            allUsersData.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'flex items-center justify-between p-2 border-b border-gray-200';
+                
+                const roleBadge = user.role === 'admin' ? 
+                    `<span class="bg-blue-200 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">Admin</span>` : 
+                    `<span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full">Usuário</span>`;
+                
+                const fullAccessToggle = user.role !== 'admin' ? `
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="" class="sr-only peer" ${user.hasFullAccess ? 'checked' : ''} onclick="toggleFullAccess('${user.id}', ${user.hasFullAccess})">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        <span class="ml-3 text-sm font-medium text-gray-900">Acesso Total</span>
+                    </label>
+                ` : '';
+
+                userElement.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="font-medium text-gray-900">${user.name}</span>
+                        <span class="text-sm text-gray-500">${user.unit} - ${user.email}</span>
+                        ${roleBadge}
+                    </div>
+                    ${fullAccessToggle}
+                `;
+                userListContainer.appendChild(userElement);
+            });
+        };
+
+        /**
          * Saves a new entry to Firestore.
          * @param {Object} entryData - The data to be saved.
          */
         const saveEntry = async (entryData) => {
             try {
-                await addDoc(entriesRef, entryData);
-                console.log("Documento salvo com sucesso!");
+                if (!entriesRef) {
+                    throw new Error("Entries collection not initialized.");
+                }
+                const fullEntryData = {
+                    ...entryData,
+                    unit: userUnit,
+                    agentId: currentUserUid,
+                };
+                await addDoc(entriesRef, fullEntryData);
+                alert("Documento salvo com sucesso!");
             } catch (e) {
                 console.error("Erro ao adicionar documento: ", e);
+                alert("Erro ao adicionar documento: " + e.message);
             }
+        };
+
+        // All other functions (renderTable, updateCharts, aggregateData, exportToCsv, exportToPdf) remain the same.
+
+        /**
+         * Populates the agent name filter dropdown with unique names from the data.
+         * @param {Array} entries - An array of entry objects.
+         */
+        const populateAgentFilter = (entries) => {
+            const agentNameSelect = document.getElementById('agentNameSelect');
+            if (!agentNameSelect) return;
+            
+            // Get unique agent names
+            const uniqueAgents = [...new Set(entries.map(entry => entry.agentName))].filter(name => name);
+            
+            // Clear previous options
+            agentNameSelect.innerHTML = '<option value="all">Todos os Atendentes</option>';
+            
+            // Add a new option for each unique agent
+            uniqueAgents.sort().forEach(agent => {
+                const option = document.createElement('option');
+                option.value = agent;
+                option.textContent = agent;
+                agentNameSelect.appendChild(option);
+            });
         };
 
         /**
@@ -115,6 +361,7 @@
                 row.className = 'border-b hover:bg-gray-50';
                 row.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap">${entry.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.agentName || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${entry.baseName}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${entry.deliveryMethod}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${entry.totalDisparos}</td>
@@ -135,10 +382,29 @@
          */
         const updateCharts = (entries) => {
             const reportSelect = document.getElementById('reportSelect');
-            if (!reportSelect) return;
+            const agentNameSelect = document.getElementById('agentNameSelect');
+            const startDateInput = document.getElementById('startDateInput');
+            const endDateInput = document.getElementById('endDateInput');
+            
+            if (!reportSelect || !agentNameSelect || !startDateInput || !endDateInput) return;
+
+            // Apply date range filter first
+            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+            
+            const dateFilteredEntries = entries.filter(entry => {
+                const entryDate = new Date(entry.date);
+                const isAfterStart = !startDate || entryDate >= startDate;
+                const isBeforeEnd = !endDate || entryDate <= endDate;
+                return isAfterStart && isBeforeEnd;
+            });
+            
+            // Apply agent name filter
+            const agentNameFilter = agentNameSelect.value;
+            const filteredEntries = agentNameFilter === 'all' ? dateFilteredEntries : dateFilteredEntries.filter(entry => entry.agentName === agentNameFilter);
 
             const timeFrame = reportSelect.value;
-            const aggregatedData = aggregateData(entries, timeFrame);
+            const aggregatedData = aggregateData(filteredEntries, timeFrame);
 
             const labels = Object.keys(aggregatedData);
             const positiveData = labels.map(label => aggregatedData[label].respostasPositivas);
@@ -295,56 +561,183 @@
         };
 
 
+        /**
+         * Exports the current table data to a CSV file.
+         */
+        const exportToCsv = () => {
+            const headers = ['Data', 'Atendente', 'Nome da Base', 'Meio', 'Total Disparos', 'Positivos', 'Negativos', 'Conversao (%)', 'Evidencia'];
+            const rows = allEntriesData.map(entry => [
+                entry.date,
+                entry.agentName || 'N/A',
+                entry.baseName,
+                entry.deliveryMethod,
+                entry.totalDisparos,
+                entry.respostasPositivas,
+                entry.respostasNegativas,
+                entry.conversionRate.toFixed(2),
+                entry.evidence || 'N/A'
+            ]);
+            
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + rows.map(e => e.join(";")).join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "relatorio_bases.csv");
+            document.body.appendChild(link); // Required for Firefox
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        /**
+         * Exports the current view to a PDF using the browser's print functionality.
+         */
+        const exportToPdf = () => {
+            window.print();
+        };
+
         // UI Logic
         document.addEventListener('DOMContentLoaded', () => {
-            setupFirebase();
-
+            const loginForm = document.getElementById('loginForm');
+            const createUserForm = document.getElementById('createUserForm');
+            const logoutBtn = document.getElementById('logoutBtn');
             const entryForm = document.getElementById('entryForm');
-            const dataTableBody = document.getElementById('dataTableBody');
             const reportSelect = document.getElementById('reportSelect');
-
+            const agentNameSelect = document.getElementById('agentNameSelect');
+            const startDateInput = document.getElementById('startDateInput');
+            const endDateInput = document.getElementById('endDateInput');
+            const exportCsvBtn = document.getElementById('exportCsvBtn');
+            const exportPdfBtn = document.getElementById('exportPdfBtn');
+            const changePasswordForm = document.getElementById('changePasswordForm');
+            
             // Set today's date automatically
-            document.getElementById('dateInput').valueAsDate = new Date();
+            const dateInput = document.getElementById('dateInput');
+            if (dateInput) {
+                dateInput.valueAsDate = new Date();
+            }
 
+            if (loginForm) loginForm.addEventListener('submit', handleLogin);
+            if (createUserForm) createUserForm.addEventListener('submit', handleCreateUser);
+            if (logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
+            if (changePasswordForm) changePasswordForm.addEventListener('submit', handleChangePassword);
+            
             /**
              * Handles form submission to save a new entry.
              */
-            entryForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const totalDisparos = parseInt(document.getElementById('totalDisparos').value, 10) || 0;
-                const respostasPositivas = parseInt(document.getElementById('respostasPositivas').value, 10) || 0;
-                
-                const entryData = {
-                    date: document.getElementById('dateInput').value,
-                    baseName: document.getElementById('baseNameInput').value,
-                    deliveryMethod: document.getElementById('deliveryMethodSelect').value,
-                    totalDisparos: totalDisparos,
-                    respostasPositivas: respostasPositivas,
-                    respostasNegativas: parseInt(document.getElementById('respostasNegativas').value, 10) || 0,
-                    conversionRate: totalDisparos > 0 ? (respostasPositivas / totalDisparos) * 100 : 0,
-                    evidence: document.getElementById('evidenceInput').value
-                };
-                
-                await saveEntry(entryData);
-                entryForm.reset();
-                document.getElementById('dateInput').valueAsDate = new Date();
-            });
+            if (entryForm) {
+                entryForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const totalDisparos = parseInt(document.getElementById('totalDisparos').value, 10) || 0;
+                    const respostasPositivas = parseInt(document.getElementById('respostasPositivas').value, 10) || 0;
+                    
+                    const entryData = {
+                        date: document.getElementById('dateInput').value,
+                        agentName: document.getElementById('agentNameInput').value,
+                        baseName: document.getElementById('baseNameInput').value,
+                        deliveryMethod: document.getElementById('deliveryMethodSelect').value,
+                        totalDisparos: totalDisparos,
+                        respostasPositivas: respostasPositivas,
+                        respostasNegativas: parseInt(document.getElementById('respostasNegativas').value, 10) || 0,
+                        conversionRate: totalDisparos > 0 ? (respostasPositivas / totalDisparos) * 100 : 0,
+                        evidence: document.getElementById('evidenceInput').value,
+                        unit: userUnit
+                    };
+                    
+                    await saveEntry(entryData);
+                    entryForm.reset();
+                    document.getElementById('dateInput').valueAsDate = new Date();
+                });
+            }
 
             // Event listener for report filter change
-            reportSelect.addEventListener('change', () => {
-                // Call updateCharts with the global data stored from Firestore
-                updateCharts(allEntriesData);
-            });
+            if (reportSelect) {
+                reportSelect.addEventListener('change', () => {
+                    // Call updateCharts with the global data stored from Firestore
+                    updateCharts(allEntriesData);
+                });
+            }
+            
+            // Event listener for agent name filter change
+            if (agentNameSelect) {
+                agentNameSelect.addEventListener('change', () => {
+                    // Call updateCharts with the global data stored from Firestore
+                    updateCharts(allEntriesData);
+                });
+            }
+            
+            // Event listeners for date filter change
+            if (startDateInput) {
+                startDateInput.addEventListener('change', () => {
+                    updateCharts(allEntriesData);
+                });
+            }
+
+            if (endDateInput) {
+                endDateInput.addEventListener('change', () => {
+                    updateCharts(allEntriesData);
+                });
+            }
+            
+            // Event listeners for export buttons
+            if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportToCsv);
+            if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPdf);
+
         });
     </script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        main {
+            flex: 1;
+        }
+        footer {
+            margin-top: auto;
+            padding: 1rem;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans p-4 md:p-8 min-h-screen flex items-center justify-center">
+<body class="bg-gray-100 text-gray-800 font-sans p-4 md:p-8">
 
-    <!-- Main Container -->
-    <div class="w-full max-w-6xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-xl space-y-8">
-        <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-6">
-            Gestão de Bases de Contato
-        </h1>
+    <!-- Login Page -->
+    <div id="login-page" class="w-full max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl space-y-6 hidden">
+        <h1 class="text-3xl font-bold text-center text-gray-900">Login</h1>
+        <p class="text-center text-gray-500">Faça login para acessar a ferramenta.</p>
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label for="loginEmail" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="loginEmail" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+            </div>
+            <div>
+                <label for="loginPassword" class="block text-sm font-medium text-gray-700">Senha</label>
+                <input type="password" id="loginPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+            </div>
+            <p id="login-error" class="text-red-500 text-sm text-center"></p>
+            <button type="submit" class="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out">
+                Entrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Main App Content -->
+    <main id="main-app" class="w-full max-w-6xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-xl space-y-8 hidden">
+        <!-- Header with Logo and Title -->
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900">
+                Gestão de Bases Oeste
+            </h1>
+            <img src="https://i.ibb.co/L95t21D/128.png" alt="Logo Gestão de Bases Oeste" class="w-24 h-24 md:w-32 md:h-32">
+        </div>
+        
+        <!-- Welcome Message & Logout Button -->
+        <div class="flex items-center justify-between">
+            <p id="welcome-message" class="text-lg text-gray-700 font-medium"></p>
+            <button id="logoutBtn" class="px-4 py-2 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition">
+                Sair
+            </button>
+        </div>
 
         <!-- Loading Message -->
         <div id="loading-message" class="text-center text-gray-500 font-medium">
@@ -359,6 +752,11 @@
                 <div>
                     <label for="dateInput" class="block text-sm font-medium text-gray-700">Data do Envio</label>
                     <input type="date" id="dateInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                </div>
+                <!-- Agent Name Input -->
+                <div>
+                    <label for="agentNameInput" class="block text-sm font-medium text-gray-700">Nome do Atendente</label>
+                    <input type="text" id="agentNameInput" placeholder="Ex: João Silva" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
                 </div>
                 <!-- Base Name Input -->
                 <div>
@@ -391,7 +789,7 @@
                 </div>
                 <!-- Evidence Input -->
                 <div class="lg:col-span-3">
-                    <label for="evidenceInput" class="block text-sm font-medium text-gray-700">Evidência (Link)</label>
+                    <label for="evidenceInput" class="block text-sm font-medium text-gray-700">Evidência (Link para foto, print, ou documento)</label>
                     <input type="url" id="evidenceInput" placeholder="https://link-para-evidencia.com" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
                 </div>
                 <!-- Submit Button -->
@@ -410,14 +808,36 @@
             <h2 class="text-2xl font-semibold text-gray-700">Relatórios e Análises</h2>
             <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                 <p class="text-gray-600">Filtre seus dados para uma análise mais detalhada:</p>
-                <select id="reportSelect" class="w-full md:w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
-                    <option value="daily">Diário</option>
-                    <option value="weekly">Semanal</option>
-                    <option value="monthly">Mensal</option>
-                    <option value="yearly">Anual</option>
-                </select>
+                <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <!-- Date Range Filter -->
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <input type="date" id="startDateInput" class="w-1/2 rounded-md border-gray-300 shadow-sm px-3 py-2 focus:border-blue-500 focus:ring-blue-500" title="Data de Início">
+                        <input type="date" id="endDateInput" class="w-1/2 rounded-md border-gray-300 shadow-sm px-3 py-2 focus:border-blue-500 focus:ring-blue-500" title="Data de Fim">
+                    </div>
+                    <!-- Agent Name Filter -->
+                    <select id="agentNameSelect" class="w-full md:w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <!-- Time Frame Filter -->
+                    <select id="reportSelect" class="w-full md:w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+                        <option value="daily">Diário</option>
+                        <option value="weekly">Semanal</option>
+                        <option value="monthly">Mensal</option>
+                        <option value="yearly">Anual</option>
+                    </select>
+                </div>
             </div>
             
+            <!-- Export Buttons -->
+            <div class="flex justify-center gap-4 mt-4">
+                <button id="exportCsvBtn" class="px-6 py-2 bg-gray-600 text-white font-semibold rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-300 ease-in-out transform hover:scale-105">
+                    Exportar para CSV
+                </button>
+                <button id="exportPdfBtn" class="px-6 py-2 bg-red-600 text-white font-semibold rounded-full shadow-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-300 ease-in-out transform hover:scale-105">
+                    Exportar para PDF
+                </button>
+            </div>
+
             <!-- Summary Stats Section -->
             <div id="summary-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 <div class="bg-blue-50 p-4 rounded-xl shadow-inner">
@@ -459,6 +879,7 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Atendente</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome da Base</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meio</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Disparos</th>
@@ -474,6 +895,79 @@
                 </table>
             </div>
         </div>
+        
+        <!-- Change Password Section (User/Admin) -->
+        <div class="space-y-6 bg-gray-50 p-6 rounded-xl shadow-inner mt-8">
+            <h2 class="text-2xl font-semibold text-gray-700 border-b pb-2">Alterar Senha</h2>
+            <form id="changePasswordForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="oldPassword" class="block text-sm font-medium text-gray-700">Senha Antiga</label>
+                    <input type="password" id="oldPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+                </div>
+                <div>
+                    <label for="newPassword" class="block text-sm font-medium text-gray-700">Nova Senha</label>
+                    <input type="password" id="newPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="confirmNewPassword" class="block text-sm font-medium text-gray-700">Confirmar Nova Senha</label>
+                    <input type="password" id="confirmNewPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+                </div>
+                <div class="md:col-span-2">
+                    <p id="password-error" class="text-red-500 text-sm"></p>
+                    <p id="password-success" class="text-green-500 text-sm"></p>
+                </div>
+                <div class="md:col-span-2 flex justify-end">
+                    <button type="submit" class="w-full md:w-auto px-6 py-3 bg-yellow-500 text-white font-semibold rounded-full shadow-lg hover:bg-yellow-600 transition duration-300 ease-in-out">
+                        Alterar Senha
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+
+    <!-- Admin Tools Section (Hidden by default) -->
+    <div id="admin-tools-container" class="w-full max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl space-y-6 hidden">
+        <h2 class="text-2xl font-bold text-center text-gray-900">Ferramentas do Administrador</h2>
+        
+        <!-- Create User Form -->
+        <form id="createUserForm" class="space-y-4">
+            <h3 class="text-xl font-semibold text-gray-700">Criar Novo Usuário</h3>
+            <div>
+                <label for="newEmail" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="newEmail" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+            </div>
+            <div>
+                <label for="newPassword" class="block text-sm font-medium text-gray-700">Senha</label>
+                <input type="password" id="newPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+            </div>
+            <div>
+                <label for="newName" class="block text-sm font-medium text-gray-700">Nome do Usuário</label>
+                <input type="text" id="newName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+            </div>
+            <div>
+                <label for="newUnit" class="block text-sm font-medium text-gray-700">Unidade</label>
+                <input type="text" id="newUnit" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2" placeholder="Ex: Unidade Oeste">
+            </div>
+            <p id="create-user-error" class="text-red-500 text-sm text-center"></p>
+            <button type="submit" class="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-full shadow-lg hover:bg-green-700 transition">
+                Criar Usuário
+            </button>
+        </form>
+
+        <hr class="border-t border-gray-200 my-4">
+
+        <!-- User List & Management -->
+        <div class="space-y-4">
+            <h3 class="text-xl font-semibold text-gray-700">Gerenciar Acesso dos Usuários</h3>
+            <div id="userListContainer" class="space-y-2">
+                <!-- User list will be populated by JavaScript -->
+            </div>
+        </div>
     </div>
+    
+    <footer class="mt-auto text-center text-gray-500 text-sm py-4">
+        Sistema Projetado por Marcos Rodrigo Teixeira
+    </footer>
 </body>
 </html>
