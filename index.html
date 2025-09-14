@@ -39,6 +39,7 @@
         const userCreationForm = document.getElementById('user-creation-form');
         const loginSection = document.getElementById('login-section');
         const signInForm = document.getElementById('login-form');
+        const showUserCreationBtn = document.getElementById('show-user-creation-btn');
 
         const filterAttendant = document.getElementById('filter-attendant');
         const filterTimeframe = document.getElementById('filter-timeframe');
@@ -442,6 +443,11 @@
         };
 
         loadAttendantFilter();
+        
+        showUserCreationBtn.addEventListener('click', () => {
+            loginSection.classList.add('hidden');
+            userCreationSection.classList.remove('hidden');
+        });
 
     </script>
     <style>
@@ -634,6 +640,10 @@
                 <input type="password" name="password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Entrar</button>
             </form>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600">Não tem uma conta?</p>
+                <button id="show-user-creation-btn" class="text-blue-600 hover:underline font-semibold mt-1">Criar Conta</button>
+            </div>
         </div>
     </section>
 
@@ -649,6 +659,10 @@
                 <input type="password" name="password" placeholder="Sua Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Criar Conta</button>
             </form>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600">Já tem uma conta?</p>
+                <button id="show-login-btn" class="text-blue-600 hover:underline font-semibold mt-1">Fazer Login</button>
+            </div>
         </div>
     </section>
     
