@@ -9,16 +9,16 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot, addDoc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Sua configuração do Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyB2lF7BPdF7HDs0gfFWwPZDyRy9FYF1Hwo",
-            authDomain: "gestaodebasesoeste.firebaseapp.com",
-            projectId: "gestaodebasesoeste",
-            storageBucket: "gestaodebasesoeste.firebasestorage.app",
-            messagingSenderId: "257255121414",
-            appId: "1:257255121414:web:62b4a3be8435df41315987"
+            apiKey: "AIzaSyBo6SZLEEXvIM6tbRjn-Zza-IrA2uCJ_p0",
+            authDomain: "gestaodebasesoeste-b8648.firebaseapp.com",
+            projectId: "gestaodebasesoeste-b8648",
+            storageBucket: "gestaodebasesoeste-b8648.firebasestorage.app",
+            messagingSenderId: "475439316770",
+            appId: "1:475439316770:web:15a56cc5a92f6d9f9d2f7b"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -40,6 +40,8 @@
         const passwordExchangeSection = document.getElementById('password-exchange-section');
         const userManagementSection = document.getElementById('user-management-section');
         const userManagementTable = document.getElementById('user-management-table');
+        const firstTimeSetupSection = document.getElementById('first-time-setup-section');
+        const firstTimeSetupForm = document.getElementById('first-time-setup-form');
 
         const filterAttendant = document.getElementById('filter-attendant');
         const filterTimeframe = document.getElementById('filter-timeframe');
@@ -59,6 +61,20 @@
         const backToDashboardBtns = document.querySelectorAll('.back-to-dashboard-btn');
         const exportCsvBtn = document.getElementById('export-csv-btn');
         const exportPdfBtn = document.getElementById('export-pdf-btn');
+        
+        const userProfilesCol = collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles');
+
+        const checkIfFirstTime = async () => {
+            const usersSnapshot = await getDocs(userProfilesCol);
+            if (usersSnapshot.empty) {
+                firstTimeSetupSection.classList.remove('hidden');
+                loginSection.classList.add('hidden');
+            } else {
+                firstTimeSetupSection.classList.add('hidden');
+                loginSection.classList.remove('hidden');
+            }
+        }
+        checkIfFirstTime();
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -72,6 +88,7 @@
 
                     mainContent.classList.remove('hidden');
                     loginSection.classList.add('hidden');
+                    firstTimeSetupSection.classList.add('hidden');
                     
                     if (isMasterAdmin) {
                         adminDashboard.classList.remove('hidden');
@@ -87,6 +104,8 @@
             } else {
                 mainContent.classList.add('hidden');
                 loginSection.classList.remove('hidden');
+                firstTimeSetupSection.classList.add('hidden');
+                checkIfFirstTime();
             }
         });
 
@@ -98,6 +117,29 @@
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
                 alert("Erro ao fazer login: " + error.message);
+            }
+        });
+
+        firstTimeSetupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = firstTimeSetupForm.email.value;
+            const password = firstTimeSetupForm.password.value;
+            const name = firstTimeSetupForm.name.value;
+            const unit = firstTimeSetupForm.unit.value;
+            
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles', userCredential.user.uid), {
+                    email: email,
+                    name: name,
+                    unit: unit,
+                    role: 'admin',
+                    hasFullAccess: true
+                });
+                alert("Conta de administrador criada com sucesso! Você será redirecionado para o painel.");
+                firstTimeSetupForm.reset();
+            } catch (error) {
+                alert("Erro ao criar a conta de administrador: " + error.message);
             }
         });
 
@@ -629,7 +671,7 @@
                     <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Registrar</button>
                 </form>
             </div>
-            
+
             <!-- Seção de Troca de Senha -->
             <div id="password-exchange-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
                 <div class="flex items-center justify-between">
@@ -641,11 +683,12 @@
                     <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Trocar Senha</button>
                 </form>
             </div>
+            
         </div>
     </main>
 
     <!-- Tela de Login -->
-    <section id="login-section" class="flex-grow flex items-center justify-center p-4">
+    <section id="login-section" class="flex-grow flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-lg p-8 shadow-xl w-full max-w-sm">
             <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-16 mx-auto mb-4">
             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Acesse sua Conta</h2>
@@ -653,6 +696,22 @@
                 <input type="email" name="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <input type="password" name="password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Entrar</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Tela de Configuração Inicial -->
+    <section id="first-time-setup-section" class="flex-grow flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-lg p-8 shadow-xl w-full max-w-sm">
+            <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-16 mx-auto mb-4">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Configuração Inicial</h2>
+            <p class="text-gray-600 text-center mb-6">Este será o seu usuário administrador.</p>
+            <form id="first-time-setup-form" class="space-y-4">
+                <input type="text" name="name" placeholder="Seu Nome" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="email" name="email" placeholder="Seu Email (Usuário Admin)" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="text" name="unit" placeholder="Sua Unidade (ex: Oeste)" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="password" name="password" placeholder="Sua Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Criar Conta</button>
             </form>
         </div>
     </section>
