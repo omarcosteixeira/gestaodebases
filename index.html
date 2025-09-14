@@ -8,17 +8,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Sua configuração do Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyBo6SZLEEXvIM6tbRjn-Zza-IrA2uCJ_p0",
-            authDomain: "gestaodebasesoeste-b8648.firebaseapp.com",
-            projectId: "gestaodebasesoeste-b8648",
-            storageBucket: "gestaodebasesoeste-b8648.firebasestorage.app",
-            messagingSenderId: "475439316770",
-            appId: "1:475439316770:web:15a56cc5a92f6d9f9d2f7b"
+            apiKey: "AIzaSyB2lF7BPdF7HDs0gfFWwPZDyRy9FYF1Hwo",
+            authDomain: "gestaodebasesoeste.firebaseapp.com",
+            projectId: "gestaodebasesoeste",
+            storageBucket: "gestaodebasesoeste.firebasestorage.app",
+            messagingSenderId: "257255121414",
+            appId: "1:257255121414:web:62b4a3be8435df41315987"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -56,7 +56,7 @@
         const registerUserBtn = document.getElementById('register-user-btn');
         const exchangePasswordBtn = document.getElementById('exchange-password-btn');
         const userManagementBtn = document.getElementById('user-management-btn');
-        const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
+        const backToDashboardBtns = document.querySelectorAll('.back-to-dashboard-btn');
         const exportCsvBtn = document.getElementById('export-csv-btn');
         const exportPdfBtn = document.getElementById('export-pdf-btn');
 
@@ -81,7 +81,7 @@
                     setupExportButtons();
 
                 } else {
-                    console.error("User profile not found.");
+                    alert("Seu perfil de usuário não foi encontrado. Por favor, entre em contato com um administrador.");
                     signOut(auth);
                 }
             } else {
@@ -165,13 +165,15 @@
             loadUserManagementTable();
         });
 
-        backToDashboardBtn.addEventListener('click', () => {
-            registerSection.classList.add('hidden');
-            userManagementSection.classList.add('hidden');
-            passwordExchangeSection.classList.add('hidden');
-            dashboard.classList.remove('hidden');
+        backToDashboardBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                registerSection.classList.add('hidden');
+                userManagementSection.classList.add('hidden');
+                passwordExchangeSection.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+            });
         });
-
+        
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const now = new Date();
@@ -590,7 +592,7 @@
             <div id="user-management-section" class="md:col-span-3 lg:col-span-4 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-gray-800">Gerenciar Usuários</h2>
-                    <button id="back-to-dashboard-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
+                    <button class="back-to-dashboard-btn bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
                 </div>
                 <div class="mt-8 overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -613,7 +615,7 @@
             <div id="register-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-gray-800">Registrar Novo Usuário</h2>
-                    <button id="back-to-dashboard-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
+                    <button class="back-to-dashboard-btn bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
                 </div>
                 <form id="register-form" class="space-y-4">
                     <input type="email" name="email" placeholder="Email do Usuário" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
@@ -632,7 +634,7 @@
             <div id="password-exchange-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-gray-800">Trocar Senha</h2>
-                    <button id="back-to-dashboard-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
+                    <button class="back-to-dashboard-btn bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
                 </div>
                 <form id="exchange-password-form" class="space-y-4">
                     <input type="password" name="new-password" placeholder="Nova Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
@@ -662,6 +664,3 @@
 
 </body>
 </html>
-```
-
-
