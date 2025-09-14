@@ -1,981 +1,667 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Bases Oeste</title>
-    <!-- Inclui Tailwind CSS para estilização moderna e responsiva -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inclui a biblioteca Chart.js para criar gráficos dinâmicos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Firebase Imports -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, getDoc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+        // Sua configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBo6SZLEEXvIM6tbRjn-Zza-IrA2uCJ_p0",
+            authDomain: "gestaodebasesoeste-b8648.firebaseapp.com",
+            projectId: "gestaodebasesoeste-b8648",
+            storageBucket: "gestaodebasesoeste-b8648.firebasestorage.app",
+            messagingSenderId: "475439316770",
+            appId: "1:475439316770:web:15a56cc5a92f6d9f9d2f7b"
+        };
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBo6SZLEEXvIM6tbRjn-Zza-IrA2uCJ_p0",
-  authDomain: "gestaodebasesoeste-b8648.firebaseapp.com",
-  projectId: "gestaodebasesoeste-b8648",
-  storageBucket: "gestaodebasesoeste-b8648.firebasestorage.app",
-  messagingSenderId: "475439316770",
-  appId: "1:475439316770:web:15a56cc5a92f6d9f9d2f7b"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-        
-        // As variáveis abaixo são usadas apenas no ambiente do Canvas para demonstração.
-        // Para hospedar sua ferramenta, use as credenciais que você copiou acima.
-        const providedFirebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const finalFirebaseConfig = providedFirebaseConfig || firebaseConfig;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : finalFirebaseConfig.projectId;
-
-        // Initialize Firebase
-        const app = initializeApp(finalFirebaseConfig);
-        const db = getFirestore(app);
+        const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        let currentUserUid = null;
-        let unsubscribe = null;
-        let entriesRef = null;
-        let userProfileRef = null;
-        let positiveChart, conversionChart;
-        let allEntriesData = [];
-        let userRole = null;
         let userUnit = null;
-        let hasFullAccess = false;
-        let allUsersData = [];
+        let isMasterAdmin = false;
+        let baseEntriesChart, positiveNegativeChart, byAttendantChart;
 
-        /**
-         * Checks the auth state and initializes the app.
-         */
+        const loginForm = document.getElementById('login-form');
+        const mainContent = document.getElementById('main-content');
+        const loginSection = document.getElementById('login-section');
+        const registerSection = document.getElementById('register-section');
+        const dashboard = document.getElementById('dashboard');
+        const adminDashboard = document.getElementById('admin-dashboard');
+        const registerForm = document.getElementById('register-form');
+        const exchangePasswordForm = document.getElementById('exchange-password-form');
+        const passwordExchangeSection = document.getElementById('password-exchange-section');
+        const userManagementSection = document.getElementById('user-management-section');
+        const userManagementTable = document.getElementById('user-management-table');
+
+        const filterAttendant = document.getElementById('filter-attendant');
+        const filterTimeframe = document.getElementById('filter-timeframe');
+        const filterDateStart = document.getElementById('filter-date-start');
+        const filterDateEnd = document.getElementById('filter-date-end');
+        const totalDisparosSpan = document.getElementById('total-disparos');
+        const totalPositivosSpan = document.getElementById('total-positivos');
+        const totalNegativosSpan = document.getElementById('total-negativos');
+        const taxaConversaoSpan = document.getElementById('taxa-conversao');
+        const entriesTableBody = document.getElementById('entries-table-body');
+        const form = document.getElementById('add-entry-form');
+
+        const logoutBtn = document.getElementById('logout-btn');
+        const registerUserBtn = document.getElementById('register-user-btn');
+        const exchangePasswordBtn = document.getElementById('exchange-password-btn');
+        const userManagementBtn = document.getElementById('user-management-btn');
+        const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        const exportPdfBtn = document.getElementById('export-pdf-btn');
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                currentUserUid = user.uid;
+                const userDocRef = doc(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles', user.uid);
+                const userDoc = await getDoc(userDocRef);
                 
-                // Fetch user profile from a public collection for admin access
-                userProfileRef = doc(db, `artifacts/${appId}/public/data/user_profiles`, currentUserUid);
-                const userDoc = await getDoc(userProfileRef);
-
                 if (userDoc.exists()) {
                     const userData = userDoc.data();
-                    userRole = userData.role;
                     userUnit = userData.unit;
-                    hasFullAccess = userData.hasFullAccess || false; // Default to false
-                    document.getElementById('welcome-message').textContent = `Bem-vindo, ${userData.name || 'Usuário'}!`;
+                    isMasterAdmin = userData.hasFullAccess || false;
+
+                    mainContent.classList.remove('hidden');
+                    loginSection.classList.add('hidden');
                     
-                    // Show/Hide admin tools based on role
-                    if (userRole === 'admin') {
-                        document.getElementById('admin-tools-container').classList.remove('hidden');
-                        listenForUsers();
-                    } else {
-                        document.getElementById('admin-tools-container').classList.add('hidden');
+                    if (isMasterAdmin) {
+                        adminDashboard.classList.remove('hidden');
                     }
                     
-                    document.getElementById('main-app').classList.remove('hidden');
-                    document.getElementById('login-page').classList.add('hidden');
-                    setupDataListening();
+                    setupDataListeners();
+                    setupExportButtons();
 
                 } else {
-                    // If user profile is not found, log out for security
-                    console.error("User profile not found. Logging out.");
+                    console.error("User profile not found.");
                     signOut(auth);
                 }
             } else {
-                // User is signed out
-                document.getElementById('main-app').classList.add('hidden');
-                document.getElementById('login-page').classList.remove('hidden');
-                document.getElementById('admin-tools-container').classList.add('hidden');
-                document.getElementById('loading-message').classList.add('hidden');
-                // Clean up data and listeners on logout
-                allEntriesData = [];
-                renderTable([]);
-                updateCharts([]);
-                if (unsubscribe) unsubscribe();
+                mainContent.classList.add('hidden');
+                loginSection.classList.remove('hidden');
             }
         });
 
-        /**
-         * Sets up real-time data listening based on user role and permissions.
-         */
-        const setupDataListening = () => {
-            if (unsubscribe) unsubscribe(); // Detach any existing listener
-
-            entriesRef = collection(db, `artifacts/${appId}/public/data/base_entries`);
-            let q;
-            
-            if (hasFullAccess) {
-                // User has full access, show all data
-                q = query(entriesRef);
-            } else {
-                // Regular user, show only data from their unit
-                q = query(entriesRef, where("unit", "==", userUnit));
-            }
-
-            // Set up the real-time listener for entries
-            unsubscribe = onSnapshot(q, (querySnapshot) => {
-                const entries = [];
-                querySnapshot.forEach((doc) => {
-                    entries.push({ id: doc.id, ...doc.data() });
-                });
-                allEntriesData = entries;
-                populateAgentFilter(allEntriesData);
-                renderTable(allEntriesData);
-                updateCharts(allEntriesData);
-                document.getElementById('loading-message').classList.add('hidden');
-            }, (error) => {
-                console.error("Erro ao obter dados do Firestore:", error);
-                document.getElementById('loading-message').textContent = 'Erro ao carregar os dados. Verifique sua conexão.';
-            });
-        };
-
-        /**
-         * Listens for real-time changes to user profiles.
-         */
-        const listenForUsers = () => {
-            usersRef = collection(db, `artifacts/${appId}/public/data/user_profiles`);
-            onSnapshot(usersRef, (querySnapshot) => {
-                allUsersData = [];
-                const units = new Set();
-                querySnapshot.forEach(doc => {
-                    const userData = doc.data();
-                    allUsersData.push({ id: doc.id, ...userData });
-                    if (userData.unit) {
-                        units.add(userData.unit);
-                    }
-                });
-                unitNames = [...units].sort();
-                populateUnitFilter();
-                renderUserList();
-            }, (error) => {
-                console.error("Erro ao obter perfis de usuário:", error);
-            });
-        };
-
-        /**
-         * Handles user login.
-         */
-        const handleLogin = async (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+            const email = loginForm.email.value;
+            const password = loginForm.password.value;
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                document.getElementById('login-error').textContent = '';
             } catch (error) {
-                console.error("Erro de login:", error);
-                document.getElementById('login-error').textContent = 'Erro de login. Verifique seu email e senha.';
+                alert("Erro ao fazer login: " + error.message);
             }
-        };
+        });
 
-        /**
-         * Handles new user creation (admin only).
-         */
-        const handleCreateUser = async (e) => {
+        registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('newEmail').value;
-            const password = document.getElementById('newPassword').value;
-            const name = document.getElementById('newName').value;
-            const unit = document.getElementById('newUnit').value;
-
+            const email = registerForm.email.value;
+            const password = registerForm.password.value;
+            const name = registerForm.name.value;
+            const unit = registerForm.unit.value;
+            const hasFullAccess = registerForm.fullAccess.checked;
+            
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const uid = userCredential.user.uid;
-                await setDoc(doc(db, `artifacts/${appId}/public/data/user_profiles`, uid), {
-                    name: name,
+                await setDoc(doc(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles', userCredential.user.uid), {
                     email: email,
-                    role: 'user', // Default role is user
+                    name: name,
                     unit: unit,
-                    hasFullAccess: false
+                    role: 'user',
+                    hasFullAccess: hasFullAccess
                 });
-                document.getElementById('create-user-error').textContent = '';
-                alert('Usuário criado com sucesso!');
-                document.getElementById('createUserForm').reset();
+                alert("Usuário registrado com sucesso!");
+                registerForm.reset();
             } catch (error) {
-                console.error("Erro ao criar usuário:", error);
-                document.getElementById('create-user-error').textContent = `Erro ao criar usuário: ${error.message}`;
+                alert("Erro ao registrar usuário: " + error.message);
             }
-        };
-        
-        /**
-         * Toggles full data access for a user (admin only).
-         */
-        const toggleFullAccess = async (uid, currentAccess) => {
-            try {
-                const userDocRef = doc(db, `artifacts/${appId}/public/data/user_profiles`, uid);
-                await setDoc(userDocRef, { hasFullAccess: !currentAccess }, { merge: true });
-                alert(`Acesso total ${currentAccess ? 'removido' : 'concedido'} para o usuário.`);
-            } catch (error) {
-                console.error("Erro ao alternar acesso total:", error);
-                alert("Erro ao alterar o acesso. Por favor, tente novamente.");
-            }
-        };
+        });
 
-        /**
-         * Handles password change for the current user.
-         */
-        const handleChangePassword = async (e) => {
+        exchangePasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const oldPassword = document.getElementById('oldPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-            const passwordError = document.getElementById('password-error');
-            const passwordSuccess = document.getElementById('password-success');
-
-            passwordError.textContent = '';
-            passwordSuccess.textContent = '';
-
-            if (newPassword !== confirmNewPassword) {
-                passwordError.textContent = 'As novas senhas não coincidem.';
-                return;
-            }
-
+            const newPassword = exchangePasswordForm['new-password'].value;
             try {
-                // Re-authenticate user before changing password for security
-                const credential = EmailAuthProvider.credential(auth.currentUser.email, oldPassword);
-                await reauthenticateWithCredential(auth.currentUser, credential);
-                
                 await updatePassword(auth.currentUser, newPassword);
-                passwordSuccess.textContent = 'Senha alterada com sucesso!';
-                document.getElementById('changePasswordForm').reset();
+                alert("Senha alterada com sucesso!");
+                exchangePasswordForm.reset();
+                passwordExchangeSection.classList.add('hidden');
+                dashboard.classList.remove('hidden');
             } catch (error) {
-                console.error("Erro ao alterar senha:", error);
-                passwordError.textContent = 'Erro ao alterar a senha. Verifique a senha antiga.';
+                alert("Erro ao alterar senha: " + error.message);
             }
-        };
-        
-        /**
-         * Populates the unit filter for the admin user.
-         */
-        const populateUnitFilter = () => {
-            const unitSelect = document.getElementById('unitFilterSelect');
-            if (!unitSelect || userRole !== 'admin') return;
-            
-            unitSelect.innerHTML = '<option value="all">Todas as Unidades</option>';
-            unitNames.sort().forEach(unit => {
-                const option = document.createElement('option');
-                option.value = unit;
-                option.textContent = unit;
-                unitSelect.appendChild(option);
-            });
-        };
+        });
 
-        /**
-         * Renders the list of users in the admin dashboard.
-         */
-        const renderUserList = () => {
-            const userListContainer = document.getElementById('userListContainer');
-            if (!userListContainer) return;
-            
-            userListContainer.innerHTML = '';
-            allUsersData.forEach(user => {
-                const userElement = document.createElement('div');
-                userElement.className = 'flex items-center justify-between p-2 border-b border-gray-200';
-                
-                const roleBadge = user.role === 'admin' ? 
-                    `<span class="bg-blue-200 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">Admin</span>` : 
-                    `<span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full">Usuário</span>`;
-                
-                const fullAccessToggle = user.role !== 'admin' ? `
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="" class="sr-only peer" ${user.hasFullAccess ? 'checked' : ''} onclick="toggleFullAccess('${user.id}', ${user.hasFullAccess})">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        <span class="ml-3 text-sm font-medium text-gray-900">Acesso Total</span>
-                    </label>
-                ` : '';
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth);
+        });
 
-                userElement.innerHTML = `
-                    <div class="flex flex-col">
-                        <span class="font-medium text-gray-900">${user.name}</span>
-                        <span class="text-sm text-gray-500">${user.unit} - ${user.email}</span>
-                        ${roleBadge}
-                    </div>
-                    ${fullAccessToggle}
-                `;
-                userListContainer.appendChild(userElement);
-            });
-        };
+        registerUserBtn.addEventListener('click', () => {
+            dashboard.classList.add('hidden');
+            userManagementSection.classList.add('hidden');
+            passwordExchangeSection.classList.add('hidden');
+            registerSection.classList.remove('hidden');
+        });
 
-        /**
-         * Saves a new entry to Firestore.
-         * @param {Object} entryData - The data to be saved.
-         */
-        const saveEntry = async (entryData) => {
+        exchangePasswordBtn.addEventListener('click', () => {
+            dashboard.classList.add('hidden');
+            userManagementSection.classList.add('hidden');
+            registerSection.classList.add('hidden');
+            passwordExchangeSection.classList.remove('hidden');
+        });
+
+        userManagementBtn.addEventListener('click', () => {
+            dashboard.classList.add('hidden');
+            registerSection.classList.add('hidden');
+            passwordExchangeSection.classList.add('hidden');
+            userManagementSection.classList.remove('hidden');
+            loadUserManagementTable();
+        });
+
+        backToDashboardBtn.addEventListener('click', () => {
+            registerSection.classList.add('hidden');
+            userManagementSection.classList.add('hidden');
+            passwordExchangeSection.classList.add('hidden');
+            dashboard.classList.remove('hidden');
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const now = new Date();
+            const data = {
+                dataEnvio: form.dataEnvio.value,
+                nomeBase: form.nomeBase.value,
+                meioDisparo: form.meioDisparo.value,
+                atendente: form.atendente.value,
+                unidade: userUnit,
+                totalDisparos: parseInt(form.totalDisparos.value),
+                respostasPositivas: parseInt(form.respostasPositivas.value),
+                respostasNegativas: parseInt(form.respostasNegativas.value),
+                evidencia: form.evidencia.value,
+                timestamp: now
+            };
+
             try {
-                if (!entriesRef) {
-                    throw new Error("Entries collection not initialized.");
-                }
-                const fullEntryData = {
-                    ...entryData,
-                    unit: userUnit,
-                    agentId: currentUserUid,
-                };
-                await addDoc(entriesRef, fullEntryData);
-                alert("Documento salvo com sucesso!");
-            } catch (e) {
-                console.error("Erro ao adicionar documento: ", e);
-                alert("Erro ao adicionar documento: " + e.message);
+                await addDoc(collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'base_entries'), data);
+                form.reset();
+            } catch (error) {
+                alert("Erro ao adicionar registro: " + error.message);
             }
-        };
+        });
 
-        // All other functions (renderTable, updateCharts, aggregateData, exportToCsv, exportToPdf) remain the same.
+        const loadUserManagementTable = () => {
+            const usersCol = collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles');
+            onSnapshot(usersCol, (snapshot) => {
+                userManagementTable.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const userData = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">${userData.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${userData.email}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${userData.unit}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="checkbox" data-uid="${doc.id}" class="toggle-access" ${userData.hasFullAccess ? 'checked' : ''}>
+                        </td>
+                    `;
+                    userManagementTable.appendChild(row);
+                });
 
-        /**
-         * Populates the agent name filter dropdown with unique names from the data.
-         * @param {Array} entries - An array of entry objects.
-         */
-        const populateAgentFilter = (entries) => {
-            const agentNameSelect = document.getElementById('agentNameSelect');
-            if (!agentNameSelect) return;
-            
-            // Get unique agent names
-            const uniqueAgents = [...new Set(entries.map(entry => entry.agentName))].filter(name => name);
-            
-            // Clear previous options
-            agentNameSelect.innerHTML = '<option value="all">Todos os Atendentes</option>';
-            
-            // Add a new option for each unique agent
-            uniqueAgents.sort().forEach(agent => {
-                const option = document.createElement('option');
-                option.value = agent;
-                option.textContent = agent;
-                agentNameSelect.appendChild(option);
+                document.querySelectorAll('.toggle-access').forEach(checkbox => {
+                    checkbox.addEventListener('change', async (e) => {
+                        const uid = e.target.dataset.uid;
+                        const newAccess = e.target.checked;
+                        const userDocRef = doc(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles', uid);
+                        await updateDoc(userDocRef, { hasFullAccess: newAccess });
+                    });
+                });
             });
         };
 
-        /**
-         * Renders the data table with the provided entries.
-         * @param {Array} entries - An array of entry objects.
-         */
-        const renderTable = (entries) => {
-            const dataTableBody = document.getElementById('dataTableBody');
-            if (!dataTableBody) return;
+        const setupDataListeners = () => {
+            const entriesColRef = collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'base_entries');
+            const q = isMasterAdmin ? entriesColRef : query(entriesColRef, where("unidade", "==", userUnit));
 
-            dataTableBody.innerHTML = '';
-            // Sort entries by date in descending order for display
-            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            entries.forEach(entry => {
+            onSnapshot(q, (snapshot) => {
+                let data = [];
+                snapshot.forEach(doc => {
+                    data.push({ id: doc.id, ...doc.data() });
+                });
+
+                const filteredData = filterData(data);
+                renderSummary(filteredData);
+                renderTable(filteredData);
+                renderCharts(filteredData);
+            });
+        };
+
+        const filterData = (data) => {
+            const timeframe = filterTimeframe.value;
+            const dateStart = filterDateStart.value ? new Date(filterDateStart.value) : null;
+            const dateEnd = filterDateEnd.value ? new Date(filterDateEnd.value) : null;
+            const attendant = filterAttendant.value;
+
+            return data.filter(entry => {
+                const entryDate = new Date(entry.dataEnvio + 'T00:00:00');
+                let matchesTimeframe = true;
+                if (timeframe !== 'all') {
+                    const now = new Date();
+                    switch (timeframe) {
+                        case 'daily':
+                            matchesTimeframe = entryDate.toDateString() === now.toDateString();
+                            break;
+                        case 'weekly':
+                            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+                            const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+                            matchesTimeframe = entryDate >= startOfWeek && entryDate <= endOfWeek;
+                            break;
+                        case 'monthly':
+                            matchesTimeframe = entryDate.getMonth() === now.getMonth() && entryDate.getFullYear() === now.getFullYear();
+                            break;
+                        case 'yearly':
+                            matchesTimeframe = entryDate.getFullYear() === now.getFullYear();
+                            break;
+                    }
+                }
+
+                const matchesDateRange = (!dateStart || entryDate >= dateStart) && (!dateEnd || entryDate <= dateEnd);
+                const matchesAttendant = attendant === 'all' || entry.atendente === attendant;
+
+                return matchesTimeframe && matchesDateRange && matchesAttendant;
+            });
+        };
+
+        const renderSummary = (data) => {
+            const totalDisparos = data.reduce((sum, entry) => sum + entry.totalDisparos, 0);
+            const totalPositivos = data.reduce((sum, entry) => sum + entry.respostasPositivas, 0);
+            const totalNegativos = data.reduce((sum, entry) => sum + entry.respostasNegativas, 0);
+            const taxaConversao = totalDisparos > 0 ? ((totalPositivos / totalDisparos) * 100).toFixed(2) : 0;
+
+            totalDisparosSpan.textContent = totalDisparos;
+            totalPositivosSpan.textContent = totalPositivos;
+            totalNegativosSpan.textContent = totalNegativos;
+            taxaConversaoSpan.textContent = `${taxaConversao}%`;
+        };
+
+        const renderTable = (data) => {
+            entriesTableBody.innerHTML = '';
+            data.forEach(entry => {
                 const row = document.createElement('tr');
-                row.className = 'border-b hover:bg-gray-50';
+                const taxaConversao = ((entry.respostasPositivas / entry.totalDisparos) * 100).toFixed(2);
                 row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.date}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.agentName || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.baseName}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.deliveryMethod}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.dataEnvio}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.nomeBase}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.meioDisparo}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.atendente}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${entry.totalDisparos}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${entry.respostasPositivas}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${entry.respostasNegativas}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.conversionRate.toFixed(2)}%</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${entry.evidence ? `<a href="${entry.evidence}" target="_blank" class="text-blue-500 hover:underline">Ver Evidência</a>` : 'N/A'}
-                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${taxaConversao}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><a href="${entry.evidencia}" target="_blank" class="text-blue-600 hover:text-blue-900">Link</a></td>
                 `;
-                dataTableBody.appendChild(row);
+                entriesTableBody.appendChild(row);
             });
         };
 
-        /**
-         * Updates the charts and the summary stats based on the provided data and selected time frame.
-         * @param {Array} entries - An array of entry objects.
-         */
-        const updateCharts = (entries) => {
-            const reportSelect = document.getElementById('reportSelect');
-            const agentNameSelect = document.getElementById('agentNameSelect');
-            const startDateInput = document.getElementById('startDateInput');
-            const endDateInput = document.getElementById('endDateInput');
+        const renderCharts = (data) => {
+            // Limpar gráficos antigos
+            if (baseEntriesChart) baseEntriesChart.destroy();
+            if (positiveNegativeChart) positiveNegativeChart.destroy();
+            if (byAttendantChart) byAttendantChart.destroy();
             
-            if (!reportSelect || !agentNameSelect || !startDateInput || !endDateInput) return;
+            // Gráfico de Barras por Meio de Disparo
+            const meioDisparoData = data.reduce((acc, curr) => {
+                acc[curr.meioDisparo] = (acc[curr.meioDisparo] || 0) + curr.totalDisparos;
+                return acc;
+            }, {});
 
-            // Apply date range filter first
-            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
-            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
-            
-            const dateFilteredEntries = entries.filter(entry => {
-                const entryDate = new Date(entry.date);
-                const isAfterStart = !startDate || entryDate >= startDate;
-                const isBeforeEnd = !endDate || entryDate <= endDate;
-                return isAfterStart && isBeforeEnd;
-            });
-            
-            // Apply agent name filter
-            const agentNameFilter = agentNameSelect.value;
-            const filteredEntries = agentNameFilter === 'all' ? dateFilteredEntries : dateFilteredEntries.filter(entry => entry.agentName === agentNameFilter);
-
-            const timeFrame = reportSelect.value;
-            const aggregatedData = aggregateData(filteredEntries, timeFrame);
-
-            const labels = Object.keys(aggregatedData);
-            const positiveData = labels.map(label => aggregatedData[label].respostasPositivas);
-            const negativeData = labels.map(label => aggregatedData[label].respostasNegativas);
-            const conversionData = labels.map(label => aggregatedData[label].conversionRate);
-            
-            // Calculate and display summary stats for the entire filtered data
-            const totalDisparos = Object.values(aggregatedData).reduce((sum, item) => sum + item.totalDisparos, 0);
-            const totalPositivos = Object.values(aggregatedData).reduce((sum, item) => sum + item.respostasPositivas, 0);
-            const totalNegativos = Object.values(aggregatedData).reduce((sum, item) => sum + item.respostasNegativas, 0);
-            const overallConversionRate = totalDisparos > 0 ? (totalPositivos / totalDisparos) * 100 : 0;
-            
-            document.getElementById('totalDisparosSummary').textContent = totalDisparos;
-            document.getElementById('totalPositivosSummary').textContent = totalPositivos;
-            document.getElementById('totalNegativosSummary').textContent = totalNegativos;
-            document.getElementById('conversionRateSummary').textContent = overallConversionRate.toFixed(2) + '%';
-
-
-            // Get chart contexts
-            const positiveChartCtx = document.getElementById('positiveChart')?.getContext('2d');
-            const conversionChartCtx = document.getElementById('conversionChart')?.getContext('2d');
-
-            if (!positiveChartCtx || !conversionChartCtx) {
-                console.error("Canvas element not found for charts.");
-                return;
-            }
-
-            // Destroy previous charts if they exist to prevent duplicates
-            if (positiveChart) positiveChart.destroy();
-            if (conversionChart) conversionChart.destroy();
-
-            // Chart for Positives vs Negatives
-            positiveChart = new Chart(positiveChartCtx, {
+            baseEntriesChart = new Chart(document.getElementById('base-entries-chart'), {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: Object.keys(meioDisparoData),
                     datasets: [{
-                        label: 'Respostas Positivas',
-                        data: positiveData,
-                        backgroundColor: 'rgba(52, 211, 153, 0.6)', // Green
-                        borderColor: 'rgba(52, 211, 153, 1)',
-                        borderWidth: 1
-                    }, {
-                        label: 'Respostas Negativas',
-                        data: negativeData,
-                        backgroundColor: 'rgba(239, 68, 68, 0.6)', // Red
-                        borderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 1
+                        label: 'Total de Disparos por Meio',
+                        data: Object.values(meioDisparoData),
+                        backgroundColor: ['#2563eb', '#10b981', '#f59e0b'],
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { position: 'top' },
-                        title: {
-                            display: true,
-                            text: 'Respostas Positivas vs Negativas'
-                        }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+                    maintainAspectRatio: false,
                 }
             });
 
-            // Chart for Conversion Rate
-            conversionChart = new Chart(conversionChartCtx, {
-                type: 'line',
+            // Gráfico de Pizza Positivos x Negativos
+            const totalPos = data.reduce((sum, entry) => sum + entry.respostasPositivas, 0);
+            const totalNeg = data.reduce((sum, entry) => sum + entry.respostasNegativas, 0);
+            
+            positiveNegativeChart = new Chart(document.getElementById('positive-negative-chart'), {
+                type: 'pie',
                 data: {
-                    labels: labels,
+                    labels: ['Positivos', 'Negativos'],
                     datasets: [{
-                        label: 'Taxa de Conversão (%)',
-                        data: conversionData,
-                        borderColor: 'rgba(59, 130, 246, 1)', // Blue
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        tension: 0.1,
-                        fill: true
+                        data: [totalPos, totalNeg],
+                        backgroundColor: ['#10b981', '#ef4444'],
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { position: 'top' },
-                        title: {
-                            display: true,
-                            text: 'Evolução da Taxa de Conversão'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: {
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        }
-                    }
+                    maintainAspectRatio: false,
+                }
+            });
+            
+            // Gráfico de Barras por Atendente
+            const atendenteData = data.reduce((acc, curr) => {
+                acc[curr.atendente] = (acc[curr.atendente] || 0) + curr.respostasPositivas;
+                return acc;
+            }, {});
+
+            byAttendantChart = new Chart(document.getElementById('by-attendant-chart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(atendenteData),
+                    datasets: [{
+                        label: 'Respostas Positivas por Atendente',
+                        data: Object.values(atendenteData),
+                        backgroundColor: '#6366f1',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                 }
             });
         };
 
-        /**
-         * Aggregates the data based on the selected time frame (daily, weekly, monthly, yearly).
-         * @param {Array} entries - An array of entry objects.
-         * @param {string} timeFrame - 'daily', 'weekly', 'monthly', or 'yearly'.
-         * @returns {Object} Aggregated data.
-         */
-        const aggregateData = (entries, timeFrame) => {
-            const aggregated = {};
-            
-            // Group entries by date, week, month, or year
-            entries.forEach(entry => {
-                const date = new Date(entry.date);
-                let key = entry.date; // Daily
-
-                if (timeFrame === 'weekly') {
-                    const startOfWeek = new Date(date);
-                    startOfWeek.setDate(date.getDate() - date.getDay());
-                    key = startOfWeek.toISOString().split('T')[0];
-                } else if (timeFrame === 'monthly') {
-                    key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                } else if (timeFrame === 'yearly') {
-                    key = `${date.getFullYear()}`;
-                }
-
-                if (!aggregated[key]) {
-                    aggregated[key] = {
-                        totalDisparos: 0,
-                        respostasPositivas: 0,
-                        respostasNegativas: 0
-                    };
-                }
-                aggregated[key].totalDisparos += entry.totalDisparos;
-                aggregated[key].respostasPositivas += entry.respostasPositivas;
-                aggregated[key].respostasNegativas += entry.respostasNegativas;
-            });
-            
-            // Calculate final metrics for each group
-            for (const key in aggregated) {
-                const group = aggregated[key];
-                group.conversionRate = group.totalDisparos > 0 ? (group.respostasPositivas / group.totalDisparos) * 100 : 0;
-            }
-            
-            // Sort keys chronologically
-            const sortedKeys = Object.keys(aggregated).sort((a, b) => new Date(a) - new Date(b));
-            const sortedAggregated = {};
-            sortedKeys.forEach(key => {
-                sortedAggregated[key] = aggregated[key];
+        const setupExportButtons = () => {
+            exportCsvBtn.addEventListener('click', () => {
+                const data = Array.from(entriesTableBody.rows).map(row => Array.from(row.cells).map(cell => cell.textContent.trim()));
+                const headers = ["Data", "Nome da Base", "Meio de Disparo", "Atendente", "Total Disparos", "Positivos", "Negativos", "Conversão", "Evidência"];
+                const csv = [headers.join(','), ...data.map(row => row.join(','))].join('\n');
+                
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "relatorio_gestao_bases.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             });
 
-            return sortedAggregated;
+            exportPdfBtn.addEventListener('click', () => {
+                window.print();
+            });
         };
 
+        // Event Listeners para os filtros de relatório
+        filterAttendant.addEventListener('change', setupDataListeners);
+        filterTimeframe.addEventListener('change', setupDataListeners);
+        filterDateStart.addEventListener('change', setupDataListeners);
+        filterDateEnd.addEventListener('change', setupDataListeners);
 
-        /**
-         * Exports the current table data to a CSV file.
-         */
-        const exportToCsv = () => {
-            const headers = ['Data', 'Atendente', 'Nome da Base', 'Meio', 'Total Disparos', 'Positivos', 'Negativos', 'Conversao (%)', 'Evidencia'];
-            const rows = allEntriesData.map(entry => [
-                entry.date,
-                entry.agentName || 'N/A',
-                entry.baseName,
-                entry.deliveryMethod,
-                entry.totalDisparos,
-                entry.respostasPositivas,
-                entry.respostasNegativas,
-                entry.conversionRate.toFixed(2),
-                entry.evidence || 'N/A'
-            ]);
-            
-            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + rows.map(e => e.join(";")).join("\n");
-            
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "relatorio_bases.csv");
-            document.body.appendChild(link); // Required for Firefox
-            link.click();
-            document.body.removeChild(link);
+        // Preencher o filtro de atendentes dinamicamente
+        const loadAttendantFilter = () => {
+            const entriesColRef = collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'base_entries');
+            onSnapshot(entriesColRef, (snapshot) => {
+                const atendentes = new Set();
+                snapshot.forEach(doc => {
+                    atendentes.add(doc.data().atendente);
+                });
+                
+                filterAttendant.innerHTML = '<option value="all">Todos os Atendentes</option>';
+                atendentes.forEach(att => {
+                    const option = document.createElement('option');
+                    option.value = att;
+                    option.textContent = att;
+                    filterAttendant.appendChild(option);
+                });
+            });
         };
 
-        /**
-         * Exports the current view to a PDF using the browser's print functionality.
-         */
-        const exportToPdf = () => {
-            window.print();
-        };
+        loadAttendantFilter();
 
-        // UI Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('loginForm');
-            const createUserForm = document.getElementById('createUserForm');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const entryForm = document.getElementById('entryForm');
-            const reportSelect = document.getElementById('reportSelect');
-            const agentNameSelect = document.getElementById('agentNameSelect');
-            const startDateInput = document.getElementById('startDateInput');
-            const endDateInput = document.getElementById('endDateInput');
-            const exportCsvBtn = document.getElementById('exportCsvBtn');
-            const exportPdfBtn = document.getElementById('exportPdfBtn');
-            const changePasswordForm = document.getElementById('changePasswordForm');
-            
-            // Set today's date automatically
-            const dateInput = document.getElementById('dateInput');
-            if (dateInput) {
-                dateInput.valueAsDate = new Date();
-            }
-
-            if (loginForm) loginForm.addEventListener('submit', handleLogin);
-            if (createUserForm) createUserForm.addEventListener('submit', handleCreateUser);
-            if (logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
-            if (changePasswordForm) changePasswordForm.addEventListener('submit', handleChangePassword);
-            
-            /**
-             * Handles form submission to save a new entry.
-             */
-            if (entryForm) {
-                entryForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const totalDisparos = parseInt(document.getElementById('totalDisparos').value, 10) || 0;
-                    const respostasPositivas = parseInt(document.getElementById('respostasPositivas').value, 10) || 0;
-                    
-                    const entryData = {
-                        date: document.getElementById('dateInput').value,
-                        agentName: document.getElementById('agentNameInput').value,
-                        baseName: document.getElementById('baseNameInput').value,
-                        deliveryMethod: document.getElementById('deliveryMethodSelect').value,
-                        totalDisparos: totalDisparos,
-                        respostasPositivas: respostasPositivas,
-                        respostasNegativas: parseInt(document.getElementById('respostasNegativas').value, 10) || 0,
-                        conversionRate: totalDisparos > 0 ? (respostasPositivas / totalDisparos) * 100 : 0,
-                        evidence: document.getElementById('evidenceInput').value,
-                        unit: userUnit
-                    };
-                    
-                    await saveEntry(entryData);
-                    entryForm.reset();
-                    document.getElementById('dateInput').valueAsDate = new Date();
-                });
-            }
-
-            // Event listener for report filter change
-            if (reportSelect) {
-                reportSelect.addEventListener('change', () => {
-                    // Call updateCharts with the global data stored from Firestore
-                    updateCharts(allEntriesData);
-                });
-            }
-            
-            // Event listener for agent name filter change
-            if (agentNameSelect) {
-                agentNameSelect.addEventListener('change', () => {
-                    // Call updateCharts with the global data stored from Firestore
-                    updateCharts(allEntriesData);
-                });
-            }
-            
-            // Event listeners for date filter change
-            if (startDateInput) {
-                startDateInput.addEventListener('change', () => {
-                    updateCharts(allEntriesData);
-                });
-            }
-
-            if (endDateInput) {
-                endDateInput.addEventListener('change', () => {
-                    updateCharts(allEntriesData);
-                });
-            }
-            
-            // Event listeners for export buttons
-            if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportToCsv);
-            if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPdf);
-
-        });
     </script>
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        main {
-            flex: 1;
-        }
-        footer {
-            margin-top: auto;
-            padding: 1rem;
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+            }
+            .no-print {
+                display: none;
+            }
+            .chart-container {
+                width: 100% !important;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans p-4 md:p-8">
+<body class="bg-gray-100 flex flex-col min-h-screen font-sans antialiased">
 
-    <!-- Login Page -->
-    <div id="login-page" class="w-full max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl space-y-6 hidden">
-        <h1 class="text-3xl font-bold text-center text-gray-900">Login</h1>
-        <p class="text-center text-gray-500">Faça login para acessar a ferramenta.</p>
-        <form id="loginForm" class="space-y-4">
-            <div>
-                <label for="loginEmail" class="block text-sm font-medium text-gray-700">Email</label>
-                <input type="email" id="loginEmail" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+    <!-- Navbar -->
+    <header class="bg-gray-800 text-white p-4 shadow-md no-print">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-10">
+                <h1 class="text-2xl font-bold">Gestão de Bases Oeste</h1>
             </div>
-            <div>
-                <label for="loginPassword" class="block text-sm font-medium text-gray-700">Senha</label>
-                <input type="password" id="loginPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
+            <div class="flex items-center space-x-4">
+                <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">Sair</button>
             </div>
-            <p id="login-error" class="text-red-500 text-sm text-center"></p>
-            <button type="submit" class="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out">
-                Entrar
-            </button>
-        </form>
-    </div>
-
-    <!-- Main App Content -->
-    <main id="main-app" class="w-full max-w-6xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-xl space-y-8 hidden">
-        <!-- Header with Logo and Title -->
-        <div class="flex items-center justify-between">
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-900">
-                Gestão de Bases Oeste
-            </h1>
-            <img src="https://i.ibb.co/L95t21D/128.png" alt="Logo Gestão de Bases Oeste" class="w-24 h-24 md:w-32 md:h-32">
         </div>
-        
-        <!-- Welcome Message & Logout Button -->
-        <div class="flex items-center justify-between">
-            <p id="welcome-message" class="text-lg text-gray-700 font-medium"></p>
-            <button id="logoutBtn" class="px-4 py-2 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition">
-                Sair
-            </button>
-        </div>
+    </header>
 
-        <!-- Loading Message -->
-        <div id="loading-message" class="text-center text-gray-500 font-medium">
-            Carregando a ferramenta, por favor aguarde...
-        </div>
+    <!-- Main Content -->
+    <main id="main-content" class="flex-grow container mx-auto p-4 md:p-8 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 no-print">
 
-        <!-- Section for Data Input Form -->
-        <div class="space-y-6">
-            <h2 class="text-2xl font-semibold text-gray-700 border-b pb-2">Adicionar Novo Envio</h2>
-            <form id="entryForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Date Input -->
-                <div>
-                    <label for="dateInput" class="block text-sm font-medium text-gray-700">Data do Envio</label>
-                    <input type="date" id="dateInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+            <!-- Painel do Administrador -->
+            <div id="admin-dashboard" class="md:col-span-3 lg:col-span-4 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
+                <h2 class="text-xl font-bold text-gray-800">Painel de Administrador</h2>
+                <div class="flex flex-wrap gap-4">
+                    <button id="register-user-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">Registrar Novo Usuário</button>
+                    <button id="user-management-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">Gerenciar Usuários</button>
+                    <button id="exchange-password-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">Trocar Minha Senha</button>
                 </div>
-                <!-- Agent Name Input -->
-                <div>
-                    <label for="agentNameInput" class="block text-sm font-medium text-gray-700">Nome do Atendente</label>
-                    <input type="text" id="agentNameInput" placeholder="Ex: João Silva" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
-                </div>
-                <!-- Base Name Input -->
-                <div>
-                    <label for="baseNameInput" class="block text-sm font-medium text-gray-700">Nome da Base</label>
-                    <input type="text" id="baseNameInput" placeholder="Ex: Leads Junho 2024" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
-                </div>
-                <!-- Delivery Method Select -->
-                <div>
-                    <label for="deliveryMethodSelect" class="block text-sm font-medium text-gray-700">Meio de Disparo</label>
-                    <select id="deliveryMethodSelect" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
+            </div>
+
+            <!-- Formulário de Adição de Dados -->
+            <div id="dashboard" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4">
+                <h2 class="text-xl font-bold text-gray-800">Adicionar Novo Registro</h2>
+                <form id="add-entry-form" class="space-y-4">
+                    <input type="date" id="dataEnvio" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="text" id="nomeBase" placeholder="Nome da Base" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <select id="meioDisparo" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Selecione o Meio de Disparo</option>
                         <option value="Email">Email</option>
                         <option value="WhatsApp">WhatsApp</option>
                         <option value="Telefone">Telefone</option>
                     </select>
-                </div>
-                <!-- Total Disparos Input -->
-                <div>
-                    <label for="totalDisparos" class="block text-sm font-medium text-gray-700">Quantidade de Disparos</label>
-                    <input type="number" id="totalDisparos" placeholder="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
-                </div>
-                <!-- Respostas Positivas Input -->
-                <div>
-                    <label for="respostasPositivas" class="block text-sm font-medium text-gray-700">Respostas Positivas</label>
-                    <input type="number" id="respostasPositivas" placeholder="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
-                </div>
-                <!-- Respostas Negativas Input -->
-                <div>
-                    <label for="respostasNegativas" class="block text-sm font-medium text-gray-700">Respostas Negativas</label>
-                    <input type="number" id="respostasNegativas" placeholder="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
-                </div>
-                <!-- Evidence Input -->
-                <div class="lg:col-span-3">
-                    <label for="evidenceInput" class="block text-sm font-medium text-gray-700">Evidência (Link para foto, print, ou documento)</label>
-                    <input type="url" id="evidenceInput" placeholder="https://link-para-evidencia.com" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
-                </div>
-                <!-- Submit Button -->
-                <div class="lg:col-span-3 flex justify-center mt-4">
-                    <button type="submit" class="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300 ease-in-out transform hover:scale-105">
-                        Adicionar Registro
-                    </button>
-                </div>
-            </form>
-        </div>
+                    <input type="text" id="atendente" placeholder="Nome do Atendente" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="number" id="totalDisparos" placeholder="Total de Disparos" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="number" id="respostasPositivas" placeholder="Respostas Positivas" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="number" id="respostasNegativas" placeholder="Respostas Negativas" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="text" id="evidencia" placeholder="Link da Evidência (Foto/Arquivo)" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-all">Adicionar Registro</button>
+                </form>
+            </div>
 
-        <hr class="border-t border-gray-200 my-8">
-
-        <!-- Section for Reports and Charts -->
-        <div class="space-y-6">
-            <h2 class="text-2xl font-semibold text-gray-700">Relatórios e Análises</h2>
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <p class="text-gray-600">Filtre seus dados para uma análise mais detalhada:</p>
-                <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                    <!-- Date Range Filter -->
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <input type="date" id="startDateInput" class="w-1/2 rounded-md border-gray-300 shadow-sm px-3 py-2 focus:border-blue-500 focus:ring-blue-500" title="Data de Início">
-                        <input type="date" id="endDateInput" class="w-1/2 rounded-md border-gray-300 shadow-sm px-3 py-2 focus:border-blue-500 focus:ring-blue-500" title="Data de Fim">
-                    </div>
-                    <!-- Agent Name Filter -->
-                    <select id="agentNameSelect" class="w-full md:w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
-                        <!-- Options will be populated by JavaScript -->
-                    </select>
-                    <!-- Time Frame Filter -->
-                    <select id="reportSelect" class="w-full md:w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out px-3 py-2">
-                        <option value="daily">Diário</option>
+            <!-- Seção de Relatórios e Análises -->
+            <div class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4">
+                <h2 class="text-xl font-bold text-gray-800">Relatórios e Análises</h2>
+                <div class="flex flex-wrap gap-4 items-center">
+                    <select id="filter-attendant" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    <select id="filter-timeframe" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="all">Todo o Período</option>
+                        <option value="daily">Hoje</option>
                         <option value="weekly">Semanal</option>
                         <option value="monthly">Mensal</option>
                         <option value="yearly">Anual</option>
                     </select>
+                    <label for="filter-date-start" class="text-gray-600">De:</label>
+                    <input type="date" id="filter-date-start" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label for="filter-date-end" class="text-gray-600">Até:</label>
+                    <input type="date" id="filter-date-end" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
+
+                <!-- Painel de Resumo -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                    <div class="bg-blue-100 rounded-lg p-4 text-center shadow-sm">
+                        <p class="text-sm text-blue-600 font-medium">Total de Disparos</p>
+                        <p id="total-disparos" class="text-3xl font-bold text-blue-800 mt-2">0</p>
+                    </div>
+                    <div class="bg-green-100 rounded-lg p-4 text-center shadow-sm">
+                        <p class="text-sm text-green-600 font-medium">Respostas Positivas</p>
+                        <p id="total-positivos" class="text-3xl font-bold text-green-800 mt-2">0</p>
+                    </div>
+                    <div class="bg-red-100 rounded-lg p-4 text-center shadow-sm">
+                        <p class="text-sm text-red-600 font-medium">Respostas Negativas</p>
+                        <p id="total-negativos" class="text-3xl font-bold text-red-800 mt-2">0</p>
+                    </div>
+                    <div class="bg-yellow-100 rounded-lg p-4 text-center shadow-sm">
+                        <p class="text-sm text-yellow-600 font-medium">Taxa de Conversão</p>
+                        <p id="taxa-conversao" class="text-3xl font-bold text-yellow-800 mt-2">0%</p>
+                    </div>
+                </div>
+
+                <!-- Botões de Exportação -->
+                <div class="flex gap-4 mt-6 no-print">
+                    <button id="export-csv-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all">Exportar para CSV</button>
+                    <button id="export-pdf-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all">Exportar para PDF</button>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="bg-gray-50 rounded-lg p-4 shadow-inner">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">Disparos por Meio</h3>
+                        <div class="h-64">
+                            <canvas id="base-entries-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4 shadow-inner">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">Positivos x Negativos</h3>
+                        <div class="h-64">
+                            <canvas id="positive-negative-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4 shadow-inner">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">Positivos por Atendente</h3>
+                        <div class="h-64">
+                            <canvas id="by-attendant-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Histórico -->
+                <div class="mt-8 overflow-x-auto">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Histórico de Registros</h3>
+                    <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome da Base</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meio de Disparo</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Atendente</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Positivos</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Negativos</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversão</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evidência</th>
+                                </tr>
+                            </thead>
+                            <tbody id="entries-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Dados da tabela serão inseridos aqui pelo JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Gerenciamento de Usuários (APENAS ADMIN) -->
+            <div id="user-management-section" class="md:col-span-3 lg:col-span-4 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800">Gerenciar Usuários</h2>
+                    <button id="back-to-dashboard-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
+                </div>
+                <div class="mt-8 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidade</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acesso Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-management-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Usuários serão listados aqui -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Seção de Registro de Usuários -->
+            <div id="register-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800">Registrar Novo Usuário</h2>
+                    <button id="back-to-dashboard-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
+                </div>
+                <form id="register-form" class="space-y-4">
+                    <input type="email" name="email" placeholder="Email do Usuário" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="password" name="password" placeholder="Senha Temporária" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="text" name="name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="text" name="unit" placeholder="Unidade (ex: Oeste)" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="fullAccess" name="fullAccess" class="rounded text-blue-600 focus:ring-blue-500">
+                        <label for="fullAccess" class="text-gray-700">Conceder acesso total (admin)</label>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Registrar</button>
+                </form>
             </div>
             
-            <!-- Export Buttons -->
-            <div class="flex justify-center gap-4 mt-4">
-                <button id="exportCsvBtn" class="px-6 py-2 bg-gray-600 text-white font-semibold rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-300 ease-in-out transform hover:scale-105">
-                    Exportar para CSV
-                </button>
-                <button id="exportPdfBtn" class="px-6 py-2 bg-red-600 text-white font-semibold rounded-full shadow-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-300 ease-in-out transform hover:scale-105">
-                    Exportar para PDF
-                </button>
-            </div>
-
-            <!-- Summary Stats Section -->
-            <div id="summary-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div class="bg-blue-50 p-4 rounded-xl shadow-inner">
-                    <div class="text-lg font-bold text-blue-700" id="totalDisparosSummary">0</div>
-                    <div class="text-sm text-gray-500">Total de Disparos</div>
+            <!-- Seção de Troca de Senha -->
+            <div id="password-exchange-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800">Trocar Senha</h2>
+                    <button id="back-to-dashboard-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
                 </div>
-                <div class="bg-green-50 p-4 rounded-xl shadow-inner">
-                    <div class="text-lg font-bold text-green-700" id="totalPositivosSummary">0</div>
-                    <div class="text-sm text-gray-500">Respostas Positivas</div>
-                </div>
-                <div class="bg-red-50 p-4 rounded-xl shadow-inner">
-                    <div class="text-lg font-bold text-red-700" id="totalNegativosSummary">0</div>
-                    <div class="text-sm text-gray-500">Respostas Negativas</div>
-                </div>
-                <div class="bg-yellow-50 p-4 rounded-xl shadow-inner">
-                    <div class="text-lg font-bold text-yellow-700" id="conversionRateSummary">0.00%</div>
-                    <div class="text-sm text-gray-500">Taxa de Conversão Geral</div>
-                </div>
-            </div>
-
-            <!-- Charts Container -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-gray-50 p-6 rounded-xl shadow-inner">
-                    <canvas id="positiveChart"></canvas>
-                </div>
-                <div class="bg-gray-50 p-6 rounded-xl shadow-inner">
-                    <canvas id="conversionChart"></canvas>
-                </div>
+                <form id="exchange-password-form" class="space-y-4">
+                    <input type="password" name="new-password" placeholder="Nova Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Trocar Senha</button>
+                </form>
             </div>
         </div>
-
-        <hr class="border-t border-gray-200 my-8">
-
-        <!-- Section for Data Table -->
-        <div class="space-y-6">
-            <h2 class="text-2xl font-semibold text-gray-700">Histórico de Envios</h2>
-            <div class="overflow-x-auto rounded-lg shadow-md">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Atendente</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome da Base</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meio</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Disparos</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Positivos</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Negativos</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversão (%)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evidência</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody" class="bg-white divide-y divide-gray-200">
-                        <!-- Table rows will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <!-- Change Password Section (User/Admin) -->
-        <div class="space-y-6 bg-gray-50 p-6 rounded-xl shadow-inner mt-8">
-            <h2 class="text-2xl font-semibold text-gray-700 border-b pb-2">Alterar Senha</h2>
-            <form id="changePasswordForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="oldPassword" class="block text-sm font-medium text-gray-700">Senha Antiga</label>
-                    <input type="password" id="oldPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
-                </div>
-                <div>
-                    <label for="newPassword" class="block text-sm font-medium text-gray-700">Nova Senha</label>
-                    <input type="password" id="newPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="confirmNewPassword" class="block text-sm font-medium text-gray-700">Confirmar Nova Senha</label>
-                    <input type="password" id="confirmNewPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
-                </div>
-                <div class="md:col-span-2">
-                    <p id="password-error" class="text-red-500 text-sm"></p>
-                    <p id="password-success" class="text-green-500 text-sm"></p>
-                </div>
-                <div class="md:col-span-2 flex justify-end">
-                    <button type="submit" class="w-full md:w-auto px-6 py-3 bg-yellow-500 text-white font-semibold rounded-full shadow-lg hover:bg-yellow-600 transition duration-300 ease-in-out">
-                        Alterar Senha
-                    </button>
-                </div>
-            </form>
-        </div>
-
     </main>
 
-    <!-- Admin Tools Section (Hidden by default) -->
-    <div id="admin-tools-container" class="w-full max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl space-y-6 hidden">
-        <h2 class="text-2xl font-bold text-center text-gray-900">Ferramentas do Administrador</h2>
-        
-        <!-- Create User Form -->
-        <form id="createUserForm" class="space-y-4">
-            <h3 class="text-xl font-semibold text-gray-700">Criar Novo Usuário</h3>
-            <div>
-                <label for="newEmail" class="block text-sm font-medium text-gray-700">Email</label>
-                <input type="email" id="newEmail" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
-            </div>
-            <div>
-                <label for="newPassword" class="block text-sm font-medium text-gray-700">Senha</label>
-                <input type="password" id="newPassword" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
-            </div>
-            <div>
-                <label for="newName" class="block text-sm font-medium text-gray-700">Nome do Usuário</label>
-                <input type="text" id="newName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2">
-            </div>
-            <div>
-                <label for="newUnit" class="block text-sm font-medium text-gray-700">Unidade</label>
-                <input type="text" id="newUnit" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-3 py-2" placeholder="Ex: Unidade Oeste">
-            </div>
-            <p id="create-user-error" class="text-red-500 text-sm text-center"></p>
-            <button type="submit" class="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-full shadow-lg hover:bg-green-700 transition">
-                Criar Usuário
-            </button>
-        </form>
-
-        <hr class="border-t border-gray-200 my-4">
-
-        <!-- User List & Management -->
-        <div class="space-y-4">
-            <h3 class="text-xl font-semibold text-gray-700">Gerenciar Acesso dos Usuários</h3>
-            <div id="userListContainer" class="space-y-2">
-                <!-- User list will be populated by JavaScript -->
-            </div>
+    <!-- Tela de Login -->
+    <section id="login-section" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg p-8 shadow-xl w-full max-w-sm">
+            <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-16 mx-auto mb-4">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Acesse sua Conta</h2>
+            <form id="login-form" class="space-y-4">
+                <input type="email" name="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="password" name="password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Entrar</button>
+            </form>
         </div>
-    </div>
+    </section>
     
-    <footer class="mt-auto text-center text-gray-500 text-sm py-4">
+    <!-- Rodapé -->
+    <footer class="bg-gray-800 text-gray-400 text-center p-4 text-xs no-print">
         Sistema Projetado por Marcos Rodrigo Teixeira
     </footer>
+
 </body>
 </html>
+```
+
 
