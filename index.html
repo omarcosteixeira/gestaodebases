@@ -11,7 +11,6 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot, addDoc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Sua configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBo6SZLEEXvIM6tbRjn-Zza-IrA2uCJ_p0",
             authDomain: "gestaodebasesoeste-b8648.firebaseapp.com",
@@ -62,7 +61,7 @@
         const exportCsvBtn = document.getElementById('export-csv-btn');
         const exportPdfBtn = document.getElementById('export-pdf-btn');
         
-        const userProfilesCol = collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles');
+        const userProfilesCol = collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles');
 
         const checkIfFirstTime = async () => {
             const usersSnapshot = await getDocs(userProfilesCol);
@@ -74,11 +73,10 @@
                 loginSection.classList.remove('hidden');
             }
         }
-        checkIfFirstTime();
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const userDocRef = doc(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles', user.uid);
+                const userDocRef = doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', user.uid);
                 const userDoc = await getDoc(userDocRef);
                 
                 if (userDoc.exists()) {
@@ -129,7 +127,7 @@
             
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles', userCredential.user.uid), {
+                await setDoc(doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', userCredential.user.uid), {
                     email: email,
                     name: name,
                     unit: unit,
@@ -153,7 +151,7 @@
             
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles', userCredential.user.uid), {
+                await setDoc(doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', userCredential.user.uid), {
                     email: email,
                     name: name,
                     unit: unit,
@@ -233,7 +231,7 @@
             };
 
             try {
-                await addDoc(collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'base_entries'), data);
+                await addDoc(collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'base_entries'), data);
                 form.reset();
             } catch (error) {
                 alert("Erro ao adicionar registro: " + error.message);
@@ -241,7 +239,7 @@
         });
 
         const loadUserManagementTable = () => {
-            const usersCol = collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles');
+            const usersCol = collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles');
             onSnapshot(usersCol, (snapshot) => {
                 userManagementTable.innerHTML = '';
                 snapshot.forEach((doc) => {
@@ -262,7 +260,7 @@
                     checkbox.addEventListener('change', async (e) => {
                         const uid = e.target.dataset.uid;
                         const newAccess = e.target.checked;
-                        const userDocRef = doc(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'user_profiles', uid);
+                        const userDocRef = doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', uid);
                         await updateDoc(userDocRef, { hasFullAccess: newAccess });
                     });
                 });
@@ -270,7 +268,7 @@
         };
 
         const setupDataListeners = () => {
-            const entriesColRef = collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'base_entries');
+            const entriesColRef = collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'base_entries');
             const q = isMasterAdmin ? entriesColRef : query(entriesColRef, where("unidade", "==", userUnit));
 
             onSnapshot(q, (snapshot) => {
@@ -355,12 +353,10 @@
         };
 
         const renderCharts = (data) => {
-            // Limpar gráficos antigos
             if (baseEntriesChart) baseEntriesChart.destroy();
             if (positiveNegativeChart) positiveNegativeChart.destroy();
             if (byAttendantChart) byAttendantChart.destroy();
             
-            // Gráfico de Barras por Meio de Disparo
             const meioDisparoData = data.reduce((acc, curr) => {
                 acc[curr.meioDisparo] = (acc[curr.meioDisparo] || 0) + curr.totalDisparos;
                 return acc;
@@ -382,7 +378,6 @@
                 }
             });
 
-            // Gráfico de Pizza Positivos x Negativos
             const totalPos = data.reduce((sum, entry) => sum + entry.respostasPositivas, 0);
             const totalNeg = data.reduce((sum, entry) => sum + entry.respostasNegativas, 0);
             
@@ -401,7 +396,6 @@
                 }
             });
             
-            // Gráfico de Barras por Atendente
             const atendenteData = data.reduce((acc, curr) => {
                 acc[curr.atendente] = (acc[curr.atendente] || 0) + curr.respostasPositivas;
                 return acc;
@@ -446,15 +440,13 @@
             });
         };
 
-        // Event Listeners para os filtros de relatório
         filterAttendant.addEventListener('change', setupDataListeners);
         filterTimeframe.addEventListener('change', setupDataListeners);
         filterDateStart.addEventListener('change', setupDataListeners);
         filterDateEnd.addEventListener('change', setupDataListeners);
 
-        // Preencher o filtro de atendentes dinamicamente
         const loadAttendantFilter = () => {
-            const entriesColRef = collection(db, 'artifacts', 'gestaodebasesoeste', 'public', 'data', 'base_entries');
+            const entriesColRef = collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'base_entries');
             onSnapshot(entriesColRef, (snapshot) => {
                 const atendentes = new Set();
                 snapshot.forEach(doc => {
@@ -490,7 +482,6 @@
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen font-sans antialiased">
 
-    <!-- Navbar -->
     <header class="bg-gray-800 text-white p-4 shadow-md no-print">
         <div class="container mx-auto flex items-center justify-between">
             <div class="flex items-center space-x-4">
@@ -503,11 +494,9 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main id="main-content" class="flex-grow container mx-auto p-4 md:p-8 hidden">
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 no-print">
 
-            <!-- Painel do Administrador -->
             <div id="admin-dashboard" class="md:col-span-3 lg:col-span-4 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
                 <h2 class="text-xl font-bold text-gray-800">Painel de Administrador</h2>
                 <div class="flex flex-wrap gap-4">
@@ -517,7 +506,6 @@
                 </div>
             </div>
 
-            <!-- Formulário de Adição de Dados -->
             <div id="dashboard" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4">
                 <h2 class="text-xl font-bold text-gray-800">Adicionar Novo Registro</h2>
                 <form id="add-entry-form" class="space-y-4">
@@ -538,7 +526,6 @@
                 </form>
             </div>
 
-            <!-- Seção de Relatórios e Análises -->
             <div class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4">
                 <h2 class="text-xl font-bold text-gray-800">Relatórios e Análises</h2>
                 <div class="flex flex-wrap gap-4 items-center">
@@ -556,7 +543,6 @@
                     <input type="date" id="filter-date-end" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <!-- Painel de Resumo -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
                     <div class="bg-blue-100 rounded-lg p-4 text-center shadow-sm">
                         <p class="text-sm text-blue-600 font-medium">Total de Disparos</p>
@@ -576,13 +562,11 @@
                     </div>
                 </div>
 
-                <!-- Botões de Exportação -->
                 <div class="flex gap-4 mt-6 no-print">
                     <button id="export-csv-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all">Exportar para CSV</button>
                     <button id="export-pdf-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all">Exportar para PDF</button>
                 </div>
 
-                <!-- Gráficos -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                     <div class="bg-gray-50 rounded-lg p-4 shadow-inner">
                         <h3 class="text-lg font-bold text-gray-700 mb-4">Disparos por Meio</h3>
@@ -604,7 +588,6 @@
                     </div>
                 </div>
 
-                <!-- Tabela de Histórico -->
                 <div class="mt-8 overflow-x-auto">
                     <h3 class="text-lg font-bold text-gray-800 mb-4">Histórico de Registros</h3>
                     <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
@@ -623,14 +606,12 @@
                                 </tr>
                             </thead>
                             <tbody id="entries-table-body" class="bg-white divide-y divide-gray-200">
-                                <!-- Dados da tabela serão inseridos aqui pelo JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Seção de Gerenciamento de Usuários (APENAS ADMIN) -->
             <div id="user-management-section" class="md:col-span-3 lg:col-span-4 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-gray-800">Gerenciar Usuários</h2>
@@ -647,13 +628,11 @@
                             </tr>
                         </thead>
                         <tbody id="user-management-table" class="bg-white divide-y divide-gray-200">
-                            <!-- Usuários serão listados aqui -->
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Seção de Registro de Usuários -->
             <div id="register-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-gray-800">Registrar Novo Usuário</h2>
@@ -672,7 +651,6 @@
                 </form>
             </div>
 
-            <!-- Seção de Troca de Senha -->
             <div id="password-exchange-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-gray-800">Trocar Senha</h2>
@@ -687,7 +665,6 @@
         </div>
     </main>
 
-    <!-- Tela de Login -->
     <section id="login-section" class="flex-grow flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-lg p-8 shadow-xl w-full max-w-sm">
             <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-16 mx-auto mb-4">
@@ -700,7 +677,6 @@
         </div>
     </section>
 
-    <!-- Tela de Configuração Inicial -->
     <section id="first-time-setup-section" class="flex-grow flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-lg p-8 shadow-xl w-full max-w-sm">
             <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-16 mx-auto mb-4">
@@ -716,7 +692,6 @@
         </div>
     </section>
     
-    <!-- Rodapé -->
     <footer class="bg-gray-800 text-gray-400 text-center p-4 text-xs no-print">
         Sistema Projetado por Marcos Rodrigo Teixeira
     </footer>
