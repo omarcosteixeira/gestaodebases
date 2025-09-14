@@ -1,17 +1,213 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Bases Oeste</title>
+    <title>Gestão de bases Oeste</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot, addDoc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <div id="app" class="flex flex-1 flex-col p-4 md:p-8">
+        <!-- Tela de Autenticação -->
+        <div id="auth-screen" class="flex flex-col items-center justify-center flex-1">
+            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+                <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Gestão de bases Oeste</h1>
+                <div id="auth-form-container">
+                    <form id="login-form" class="space-y-4">
+                        <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="password" id="login-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition duration-300">Entrar</button>
+                    </form>
+                    <div class="mt-4 text-center">
+                        <p class="text-sm text-gray-600">
+                            Não tem uma conta? <a href="#" id="show-register" class="text-blue-600 hover:underline">Cadastre-se</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        const firebaseConfig = {
+        <!-- Tela Principal da Ferramenta -->
+        <div id="main-app" class="hidden flex-1 flex-col">
+            <!-- Cabeçalho -->
+            <header class="bg-blue-600 text-white p-4 rounded-b-lg shadow-md mb-8 flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Gestão de bases Oeste</h1>
+                <div class="flex items-center space-x-4">
+                    <span id="user-info" class="font-semibold text-sm"></span>
+                    <button id="logout-button" class="bg-white text-blue-600 px-4 py-2 rounded-md font-semibold hover:bg-gray-100 transition duration-300">Sair</button>
+                </div>
+            </header>
+
+            <!-- Seções da Ferramenta -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1">
+                <!-- Seção de Cadastro -->
+                <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Cadastro de Base</h2>
+                    <form id="base-form" class="space-y-4">
+                        <div>
+                            <label for="data" class="block text-sm font-medium text-gray-700">Data</label>
+                            <input type="date" id="data" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" readonly>
+                        </div>
+                        <div>
+                            <label for="nomeBase" class="block text-sm font-medium text-gray-700">Nome da Base</label>
+                            <input type="text" id="nomeBase" placeholder="Ex: Campanha Verão" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="nomeAtendente" class="block text-sm font-medium text-gray-700">Nome do Atendente</label>
+                            <input type="text" id="nomeAtendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" readonly>
+                        </div>
+                        <div>
+                            <label for="meioDisparo" class="block text-sm font-medium text-gray-700">Meio de Disparo</label>
+                            <select id="meioDisparo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <option value="">Selecione...</option>
+                                <option value="Email">Email</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                                <option value="Telefone">Telefone</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="quantidadeDisparos" class="block text-sm font-medium text-gray-700">Quantidade de Disparos</label>
+                            <input type="number" id="quantidadeDisparos" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="positivos" class="block text-sm font-medium text-gray-700">Quantidade de Positivos</label>
+                            <input type="number" id="positivos" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="negativos" class="block text-sm font-medium text-gray-700">Quantidade de Negativos</label>
+                            <input type="number" id="negativos" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="evidencia" class="block text-sm font-medium text-gray-700">Evidência (URL ou Observações)</label>
+                            <input type="text" id="evidencia" placeholder="Link para o relatório ou observações" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition duration-300">Salvar Dados</button>
+                    </form>
+                </div>
+
+                <!-- Seção de Relatórios -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Relatórios</h2>
+                        <div id="report-controls" class="flex space-x-2">
+                            <button id="report-diario" class="px-3 py-1 text-sm rounded-full bg-blue-500 text-white font-semibold hover:bg-blue-600 transition">Diário</button>
+                            <button id="report-semanal" class="px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Semanal</button>
+                            <button id="report-anual" class="px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Anual</button>
+                        </div>
+                    </div>
+                    
+                    <div id="report-filters" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <label for="filter-atendente" class="block text-sm font-medium text-gray-700">Atendente</label>
+                            <select id="filter-atendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                                <option value="all">Todos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-meio" class="block text-sm font-medium text-gray-700">Meio de Disparo</label>
+                            <select id="filter-meio" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                                <option value="all">Todos</option>
+                                <option value="Email">Email</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                                <option value="Telefone">Telefone</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-start-date" class="block text-sm font-medium text-gray-700">Data Inicial</label>
+                            <input type="date" id="filter-start-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label for="filter-end-date" class="block text-sm font-medium text-gray-700">Data Final</label>
+                            <input type="date" id="filter-end-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                        </div>
+                    </div>
+                    <canvas id="reportChart" class="w-full h-80"></canvas>
+                    <div id="report-summary" class="mt-6 p-4 bg-gray-100 rounded-lg">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Resumo</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><span class="font-medium">Total de Disparos:</span> <span id="summary-disparos" class="font-bold">0</span></div>
+                            <div><span class="font-medium">Total de Positivos:</span> <span id="summary-positivos" class="font-bold">0</span></div>
+                            <div><span class="font-medium">Total de Negativos:</span> <span id="summary-negativos" class="font-bold">0</span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabela de Dados Brutos -->
+                    <div class="mt-8 overflow-x-auto">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Bases Cadastradas</h3>
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Data</th>
+                                    <th class="py-3 px-6 text-left">Base</th>
+                                    <th class="py-3 px-6 text-left">Atendente</th>
+                                    <th class="py-3 px-6 text-left">Meio</th>
+                                    <th class="py-3 px-6 text-left">Disparos</th>
+                                    <th class="py-3 px-6 text-left">Positivos</th>
+                                    <th class="py-3 px-6 text-left">Negativos</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bases-table-body" class="text-gray-600 text-sm font-light">
+                                <!-- Dados serão inseridos aqui pelo JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Administrador -->
+            <div id="admin-panel" class="hidden mt-8 bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Painel do Administrador</h2>
+                <form id="create-user-form" class="space-y-4">
+                    <h3 class="font-semibold text-gray-700">Criar Novo Usuário</h3>
+                    <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-md">
+                    <input type="email" id="new-user-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-md">
+                    <input type="password" id="new-user-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-md">
+                    <input type="text" id="new-user-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-md">
+                    <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-md font-semibold hover:bg-green-700 transition">Criar Usuário</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Pop-up de mensagens -->
+        <div id="message-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+                <p id="message-text" class="text-center text-gray-800 mb-4"></p>
+                <button id="close-modal" class="w-full bg-blue-600 text-white p-2 rounded-md font-semibold">OK</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="text-center text-gray-500 text-xs p-4">
+        Sistema Projetado por Marcos Rodrigo Teixeira
+    </footer>
+
+    <!-- Firebase e Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script type="module">
+        // Importações necessárias para a versão modular do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Variáveis globais fornecidas pelo ambiente
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyBo6SZLEEXvIM6tbRjn-Zza-IrA2uCJ_p0",
             authDomain: "gestaodebasesoeste-b8648.firebaseapp.com",
             projectId: "gestaodebasesoeste-b8648",
@@ -19,645 +215,403 @@
             messagingSenderId: "475439316770",
             appId: "1:475439316770:web:15a56cc5a92f6d9f9d2f7b"
         };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        // Inicializa o Firebase
+        let app, db, auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch (e) {
+            console.error("Erro ao inicializar o Firebase:", e);
+            showMessage('Erro ao inicializar o Firebase. Verifique a configuração.');
+        }
 
-        let userUnit = null;
-        let isMasterAdmin = false;
-        let baseEntriesChart, positiveNegativeChart, byAttendantChart;
+        let currentUserId = null;
+        let currentUserRole = null;
+        let currentUserUnit = null;
+        let allBasesData = [];
+        let myChart;
 
-        const mainContent = document.getElementById('main-content');
-        const dashboard = document.getElementById('dashboard');
-        const adminDashboard = document.getElementById('admin-dashboard');
-        const exchangePasswordForm = document.getElementById('exchange-password-form');
-        const passwordExchangeSection = document.getElementById('password-exchange-section');
-        const userManagementSection = document.getElementById('user-management-section');
-        const userManagementTable = document.getElementById('user-management-table');
-        const userCreationSection = document.getElementById('user-creation-section');
-        const userCreationForm = document.getElementById('user-creation-form');
-        const loginSection = document.getElementById('login-section');
-        const signInForm = document.getElementById('login-form');
-        const showUserCreationBtn = document.getElementById('show-user-creation-btn');
-        const showLoginBtn = document.getElementById('show-login-btn');
+        // Referências aos elementos do DOM
+        const authScreen = document.getElementById('auth-screen');
+        const mainApp = document.getElementById('main-app');
+        const loginForm = document.getElementById('login-form');
+        const registerFormContainer = document.getElementById('auth-form-container');
+        const baseForm = document.getElementById('base-form');
+        const nomeAtendenteInput = document.getElementById('nomeAtendente');
+        const adminPanel = document.getElementById('admin-panel');
+        const createUserForm = document.getElementById('create-user-form');
+        const userInfoSpan = document.getElementById('user-info');
+        const logoutButton = document.getElementById('logout-button');
+        const basesTableBody = document.getElementById('bases-table-body');
+        const reportDiarioBtn = document.getElementById('report-diario');
+        const reportSemanalBtn = document.getElementById('report-semanal');
+        const reportAnualBtn = document.getElementById('report-anual');
+        const filterAtendenteSelect = document.getElementById('filter-atendente');
+        const reportChartCanvas = document.getElementById('reportChart');
+        const filterStartDateInput = document.getElementById('filter-start-date');
+        const filterEndDateInput = document.getElementById('filter-end-date');
+        const messageModal = document.getElementById('message-modal');
+        const messageText = document.getElementById('message-text');
+        const closeModalBtn = document.getElementById('close-modal');
 
-        const filterAttendant = document.getElementById('filter-attendant');
-        const filterTimeframe = document.getElementById('filter-timeframe');
-        const filterDateStart = document.getElementById('filter-date-start');
-        const filterDateEnd = document.getElementById('filter-date-end');
-        const totalDisparosSpan = document.getElementById('total-disparos');
-        const totalPositivosSpan = document.getElementById('total-positivos');
-        const totalNegativosSpan = document.getElementById('total-negativos');
-        const taxaConversaoSpan = document.getElementById('taxa-conversao');
-        const entriesTableBody = document.getElementById('entries-table-body');
-        const form = document.getElementById('add-entry-form');
-
-        const logoutBtn = document.getElementById('logout-btn');
-        const registerUserBtn = document.getElementById('register-user-btn');
-        const exchangePasswordBtn = document.getElementById('exchange-password-btn');
-        const userManagementBtn = document.getElementById('user-management-btn');
-        const backToDashboardBtns = document.querySelectorAll('.back-to-dashboard-btn');
-        const exportCsvBtn = document.getElementById('export-csv-btn');
-        const exportPdfBtn = document.getElementById('export-pdf-btn');
-        
-        const userProfilesCol = collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles');
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDocRef = doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', user.uid);
-                const userDoc = await getDoc(userDocRef);
-                
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    userUnit = userData.unit;
-                    isMasterAdmin = userData.hasFullAccess || false;
-
-                    mainContent.classList.remove('hidden');
-                    loginSection.classList.add('hidden');
-                    userCreationSection.classList.add('hidden');
-                    
-                    if (isMasterAdmin) {
-                        adminDashboard.classList.remove('hidden');
-                    }
-                    
-                    setupDataListeners();
-                    setupExportButtons();
-
-                } else {
-                    alert("Seu perfil de usuário não foi encontrado. Por favor, entre em contato com um administrador.");
-                    signOut(auth);
-                }
-            } else {
-                mainContent.classList.add('hidden');
-                loginSection.classList.remove('hidden');
-                userCreationSection.classList.add('hidden');
-            }
+        // Função para mostrar mensagens em um modal
+        function showMessage(message) {
+            messageText.textContent = message;
+            messageModal.classList.remove('hidden');
+        }
+        closeModalBtn.addEventListener('click', () => {
+            messageModal.classList.add('hidden');
         });
 
-        signInForm.addEventListener('submit', async (e) => {
+        // Alterna entre login e cadastro
+        document.getElementById('show-register').addEventListener('click', (e) => {
             e.preventDefault();
-            const email = signInForm.email.value;
-            const password = signInForm.password.value;
+            registerFormContainer.innerHTML = `
+                <form id="register-form" class="space-y-4">
+                    <input type="text" id="register-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="email" id="register-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="password" id="register-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="text" id="register-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition duration-300">Cadastrar</button>
+                </form>
+                <div class="mt-4 text-center">
+                    <p class="text-sm text-gray-600">
+                        Já tem uma conta? <a href="#" id="show-login" class="text-blue-600 hover:underline">Entrar</a>
+                    </p>
+                </div>
+            `;
+            // Adiciona o event listener para o novo formulário de registro
+            document.getElementById('register-form').addEventListener('submit', handleRegister);
+            document.getElementById('show-login').addEventListener('click', (e) => {
+                e.preventDefault();
+                registerFormContainer.innerHTML = `
+                    <form id="login-form" class="space-y-4">
+                        <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="password" id="login-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition duration-300">Entrar</button>
+                    </form>
+                    <div class="mt-4 text-center">
+                        <p class="text-sm text-gray-600">
+                            Não tem uma conta? <a href="#" id="show-register" class="text-blue-600 hover:underline">Cadastre-se</a>
+                        </p>
+                    </div>
+                `;
+                document.getElementById('login-form').addEventListener('submit', handleLogin);
+            });
+        });
+
+        // Lidar com o login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                alert("Erro ao fazer login: " + error.message);
-            }
-        });
-
-        userCreationForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = userCreationForm.email.value;
-            const password = userCreationForm.password.value;
-            const name = userCreationForm.name.value;
-            const unit = userCreationForm.unit.value;
-            
-            try {
-                const usersSnapshot = await getDocs(userProfilesCol);
-                const isFirstUser = usersSnapshot.empty;
-                const hasFullAccess = isFirstUser;
-
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', userCredential.user.uid), {
-                    email: email,
-                    name: name,
-                    unit: unit,
-                    role: isFirstUser ? 'admin' : 'user',
-                    hasFullAccess: hasFullAccess
-                });
-                alert("Conta criada com sucesso! Você será redirecionado para o painel.");
-                userCreationForm.reset();
-            } catch (error) {
-                alert("Erro ao criar a conta: " + error.message);
-            }
-        });
-
-        exchangePasswordForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newPassword = exchangePasswordForm['new-password'].value;
-            try {
-                await updatePassword(auth.currentUser, newPassword);
-                alert("Senha alterada com sucesso!");
-                exchangePasswordForm.reset();
-                passwordExchangeSection.classList.add('hidden');
-                dashboard.classList.remove('hidden');
-            } catch (error) {
-                alert("Erro ao alterar senha: " + error.message);
-            }
-        });
-
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth);
-        });
-
-        registerUserBtn.addEventListener('click', () => {
-            dashboard.classList.add('hidden');
-            userManagementSection.classList.add('hidden');
-            passwordExchangeSection.classList.add('hidden');
-            userCreationSection.classList.remove('hidden');
-        });
-
-        exchangePasswordBtn.addEventListener('click', () => {
-            dashboard.classList.add('hidden');
-            userManagementSection.classList.add('hidden');
-            userCreationSection.classList.add('hidden');
-            passwordExchangeSection.classList.remove('hidden');
-        });
-
-        userManagementBtn.addEventListener('click', () => {
-            dashboard.classList.add('hidden');
-            userCreationSection.classList.add('hidden');
-            passwordExchangeSection.classList.add('hidden');
-            userManagementSection.classList.remove('hidden');
-            loadUserManagementTable();
-        });
-
-        backToDashboardBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                userCreationSection.classList.add('hidden');
-                userManagementSection.classList.add('hidden');
-                passwordExchangeSection.classList.add('hidden');
-                dashboard.classList.remove('hidden');
-            });
-        });
-        
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const now = new Date();
-            const data = {
-                dataEnvio: form.dataEnvio.value,
-                nomeBase: form.nomeBase.value,
-                meioDisparo: form.meioDisparo.value,
-                atendente: form.atendente.value,
-                unidade: userUnit,
-                totalDisparos: parseInt(form.totalDisparos.value),
-                respostasPositivas: parseInt(form.respostasPositivas.value),
-                respostasNegativas: parseInt(form.respostasNegativas.value),
-                evidencia: form.evidencia.value,
-                timestamp: now
-            };
-
-            try {
-                await addDoc(collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'base_entries'), data);
-                form.reset();
-            } catch (error) {
-                alert("Erro ao adicionar registro: " + error.message);
-            }
-        });
-
-        const loadUserManagementTable = () => {
-            const usersCol = collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles');
-            onSnapshot(usersCol, (snapshot) => {
-                userManagementTable.innerHTML = '';
-                snapshot.forEach((doc) => {
-                    const userData = doc.data();
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap">${userData.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${userData.email}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${userData.unit}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="checkbox" data-uid="${doc.id}" class="toggle-access" ${userData.hasFullAccess ? 'checked' : ''}>
-                        </td>
-                    `;
-                    userManagementTable.appendChild(row);
-                });
-
-                document.querySelectorAll('.toggle-access').forEach(checkbox => {
-                    checkbox.addEventListener('change', async (e) => {
-                        const uid = e.target.dataset.uid;
-                        const newAccess = e.target.checked;
-                        const userDocRef = doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', uid);
-                        await updateDoc(userDocRef, { hasFullAccess: newAccess });
-                    });
-                });
-            });
-        };
-
-        const setupDataListeners = () => {
-            const entriesColRef = collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'base_entries');
-            const q = isMasterAdmin ? entriesColRef : query(entriesColRef, where("unidade", "==", userUnit));
-
-            onSnapshot(q, (snapshot) => {
-                let data = [];
-                snapshot.forEach(doc => {
-                    data.push({ id: doc.id, ...doc.data() });
-                });
-
-                const filteredData = filterData(data);
-                renderSummary(filteredData);
-                renderTable(filteredData);
-                renderCharts(filteredData);
-            });
-        };
-
-        const filterData = (data) => {
-            const timeframe = filterTimeframe.value;
-            const dateStart = filterDateStart.value ? new Date(filterDateStart.value) : null;
-            const dateEnd = filterDateEnd.value ? new Date(filterDateEnd.value) : null;
-            const attendant = filterAttendant.value;
-
-            return data.filter(entry => {
-                const entryDate = new Date(entry.dataEnvio + 'T00:00:00');
-                let matchesTimeframe = true;
-                if (timeframe !== 'all') {
-                    const now = new Date();
-                    switch (timeframe) {
-                        case 'daily':
-                            matchesTimeframe = entryDate.toDateString() === now.toDateString();
-                            break;
-                        case 'weekly':
-                            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-                            const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-                            matchesTimeframe = entryDate >= startOfWeek && entryDate <= endOfWeek;
-                            break;
-                        case 'monthly':
-                            matchesTimeframe = entryDate.getMonth() === now.getMonth() && entryDate.getFullYear() === now.getFullYear();
-                            break;
-                        case 'yearly':
-                            matchesTimeframe = entryDate.getFullYear() === now.getFullYear();
-                            break;
-                    }
-                }
-
-                const matchesDateRange = (!dateStart || entryDate >= dateStart) && (!dateEnd || entryDate <= dateEnd);
-                const matchesAttendant = attendant === 'all' || entry.atendente === attendant;
-
-                return matchesTimeframe && matchesDateRange && matchesAttendant;
-            });
-        };
-
-        const renderSummary = (data) => {
-            const totalDisparos = data.reduce((sum, entry) => sum + entry.totalDisparos, 0);
-            const totalPositivos = data.reduce((sum, entry) => sum + entry.respostasPositivas, 0);
-            const totalNegativos = data.reduce((sum, entry) => sum + entry.respostasNegativas, 0);
-            const taxaConversao = totalDisparos > 0 ? ((totalPositivos / totalDisparos) * 100).toFixed(2) : 0;
-
-            totalDisparosSpan.textContent = totalDisparos;
-            totalPositivosSpan.textContent = totalPositivos;
-            totalNegativosSpan.textContent = totalNegativos;
-            taxaConversaoSpan.textContent = `${taxaConversao}%`;
-        };
-
-        const renderTable = (data) => {
-            entriesTableBody.innerHTML = '';
-            data.forEach(entry => {
-                const row = document.createElement('tr');
-                const taxaConversao = ((entry.respostasPositivas / entry.totalDisparos) * 100).toFixed(2);
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.dataEnvio}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.nomeBase}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.meioDisparo}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.atendente}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.totalDisparos}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.respostasPositivas}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.respostasNegativas}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${taxaConversao}%</td>
-                    <td class="px-6 py-4 whitespace-nowrap"><a href="${entry.evidencia}" target="_blank" class="text-blue-600 hover:text-blue-900">Link</a></td>
-                `;
-                entriesTableBody.appendChild(row);
-            });
-        };
-
-        const renderCharts = (data) => {
-            if (baseEntriesChart) baseEntriesChart.destroy();
-            if (positiveNegativeChart) positiveNegativeChart.destroy();
-            if (byAttendantChart) byAttendantChart.destroy();
-            
-            const meioDisparoData = data.reduce((acc, curr) => {
-                acc[curr.meioDisparo] = (acc[curr.meioDisparo] || 0) + curr.totalDisparos;
-                return acc;
-            }, {});
-
-            baseEntriesChart = new Chart(document.getElementById('base-entries-chart'), {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(meioDisparoData),
-                    datasets: [{
-                        label: 'Total de Disparos por Meio',
-                        data: Object.values(meioDisparoData),
-                        backgroundColor: ['#2563eb', '#10b981', '#f59e0b'],
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                }
-            });
-
-            const totalPos = data.reduce((sum, entry) => sum + entry.respostasPositivas, 0);
-            const totalNeg = data.reduce((sum, entry) => sum + entry.respostasNegativas, 0);
-            
-            positiveNegativeChart = new Chart(document.getElementById('positive-negative-chart'), {
-                type: 'pie',
-                data: {
-                    labels: ['Positivos', 'Negativos'],
-                    datasets: [{
-                        data: [totalPos, totalNeg],
-                        backgroundColor: ['#10b981', '#ef4444'],
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                }
-            });
-            
-            const atendenteData = data.reduce((acc, curr) => {
-                acc[curr.atendente] = (acc[curr.atendente] || 0) + curr.respostasPositivas;
-                return acc;
-            }, {});
-
-            byAttendantChart = new Chart(document.getElementById('by-attendant-chart'), {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(atendenteData),
-                    datasets: [{
-                        label: 'Respostas Positivas por Atendente',
-                        data: Object.values(atendenteData),
-                        backgroundColor: '#6366f1',
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                }
-            });
-        };
-
-        const setupExportButtons = () => {
-            exportCsvBtn.addEventListener('click', () => {
-                const data = Array.from(entriesTableBody.rows).map(row => Array.from(row.cells).map(cell => cell.textContent.trim()));
-                const headers = ["Data", "Nome da Base", "Meio de Disparo", "Atendente", "Total Disparos", "Positivos", "Negativos", "Conversão", "Evidência"];
-                const csv = [headers.join(','), ...data.map(row => row.join(','))].join('\n');
-                
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", "relatorio_gestao_bases.csv");
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-
-            exportPdfBtn.addEventListener('click', () => {
-                window.print();
-            });
-        };
-
-        filterAttendant.addEventListener('change', setupDataListeners);
-        filterTimeframe.addEventListener('change', setupDataListeners);
-        filterDateStart.addEventListener('change', setupDataListeners);
-        filterDateEnd.addEventListener('change', setupDataListeners);
-
-        const loadAttendantFilter = () => {
-            const entriesColRef = collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'base_entries');
-            onSnapshot(entriesColRef, (snapshot) => {
-                const atendentes = new Set();
-                snapshot.forEach(doc => {
-                    atendentes.add(doc.data().atendente);
-                });
-                
-                filterAttendant.innerHTML = '<option value="all">Todos os Atendentes</option>';
-                atendentes.forEach(att => {
-                    const option = document.createElement('option');
-                    option.value = att;
-                    option.textContent = att;
-                    filterAttendant.appendChild(option);
-                });
-            });
-        };
-
-        loadAttendantFilter();
-        
-        showUserCreationBtn.addEventListener('click', () => {
-            loginSection.classList.add('hidden');
-            userCreationSection.classList.remove('hidden');
-        });
-
-    </script>
-    <style>
-        @media print {
-            body {
-                -webkit-print-color-adjust: exact;
-            }
-            .no-print {
-                display: none;
-            }
-            .chart-container {
-                width: 100% !important;
+                showMessage(`Erro ao fazer login: ${error.message}`);
             }
         }
-    </style>
-</head>
-<body class="bg-gray-100 flex flex-col min-h-screen font-sans antialiased">
+        loginForm.addEventListener('submit', handleLogin);
 
-    <header class="bg-gray-800 text-white p-4 shadow-md no-print">
-        <div class="container mx-auto flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-10">
-                <h1 class="text-2xl font-bold">Gestão de Bases Oeste</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-                <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">Sair</button>
-            </div>
-        </div>
-    </header>
+        // Lidar com o registro
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const unidade = document.getElementById('register-unidade').value;
 
-    <main id="main-content" class="flex-grow container mx-auto p-4 md:p-8 hidden">
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 no-print">
+            try {
+                const adminDoc = await getDoc(doc(db, "app_state", "admin"));
+                let isFirstUser = !adminDoc.exists();
 
-            <div id="admin-dashboard" class="md:col-span-3 lg:col-span-4 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
-                <h2 class="text-xl font-bold text-gray-800">Painel de Administrador</h2>
-                <div class="flex flex-wrap gap-4">
-                    <button id="register-user-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">Registrar Novo Usuário</button>
-                    <button id="user-management-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">Gerenciar Usuários</button>
-                    <button id="exchange-password-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">Trocar Minha Senha</button>
-                </div>
-            </div>
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
 
-            <div id="dashboard" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4">
-                <h2 class="text-xl font-bold text-gray-800">Adicionar Novo Registro</h2>
-                <form id="add-entry-form" class="space-y-4">
-                    <input type="date" id="dataEnvio" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="text" id="nomeBase" placeholder="Nome da Base" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <select id="meioDisparo" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <option value="">Selecione o Meio de Disparo</option>
-                        <option value="Email">Email</option>
-                        <option value="WhatsApp">WhatsApp</option>
-                        <option value="Telefone">Telefone</option>
-                    </select>
-                    <input type="text" id="atendente" placeholder="Nome do Atendente" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="number" id="totalDisparos" placeholder="Total de Disparos" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="number" id="respostasPositivas" placeholder="Respostas Positivas" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="number" id="respostasNegativas" placeholder="Respostas Negativas" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="text" id="evidencia" placeholder="Link da Evidência (Foto/Arquivo)" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-all">Adicionar Registro</button>
-                </form>
-            </div>
+                const userRole = isFirstUser ? 'admin' : 'user';
+                const userUnidade = isFirstUser ? 'Oeste' : unidade;
 
-            <div class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4">
-                <h2 class="text-xl font-bold text-gray-800">Relatórios e Análises</h2>
-                <div class="flex flex-wrap gap-4 items-center">
-                    <select id="filter-attendant" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
-                    <select id="filter-timeframe" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="all">Todo o Período</option>
-                        <option value="daily">Hoje</option>
-                        <option value="weekly">Semanal</option>
-                        <option value="monthly">Mensal</option>
-                        <option value="yearly">Anual</option>
-                    </select>
-                    <label for="filter-date-start" class="text-gray-600">De:</label>
-                    <input type="date" id="filter-date-start" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <label for="filter-date-end" class="text-gray-600">Até:</label>
-                    <input type="date" id="filter-date-end" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
+                await setDoc(doc(db, "users", user.uid), {
+                    name: name,
+                    email: email,
+                    unidade: userUnidade,
+                    role: userRole
+                });
+                
+                if (isFirstUser) {
+                    await setDoc(doc(db, "app_state", "admin"), { adminId: user.uid });
+                }
+                
+                showMessage(`Usuário ${name} cadastrado com sucesso!`);
+            } catch (error) {
+                showMessage(`Erro ao cadastrar: ${error.message}`);
+            }
+        }
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-                    <div class="bg-blue-100 rounded-lg p-4 text-center shadow-sm">
-                        <p class="text-sm text-blue-600 font-medium">Total de Disparos</p>
-                        <p id="total-disparos" class="text-3xl font-bold text-blue-800 mt-2">0</p>
-                    </div>
-                    <div class="bg-green-100 rounded-lg p-4 text-center shadow-sm">
-                        <p class="text-sm text-green-600 font-medium">Respostas Positivas</p>
-                        <p id="total-positivos" class="text-3xl font-bold text-green-800 mt-2">0</p>
-                    </div>
-                    <div class="bg-red-100 rounded-lg p-4 text-center shadow-sm">
-                        <p class="text-sm text-red-600 font-medium">Respostas Negativas</p>
-                        <p id="total-negativos" class="text-3xl font-bold text-red-800 mt-2">0</p>
-                    </div>
-                    <div class="bg-yellow-100 rounded-lg p-4 text-center shadow-sm">
-                        <p class="text-sm text-yellow-600 font-medium">Taxa de Conversão</p>
-                        <p id="taxa-conversao" class="text-3xl font-bold text-yellow-800 mt-2">0%</p>
-                    </div>
-                </div>
-
-                <div class="flex gap-4 mt-6 no-print">
-                    <button id="export-csv-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all">Exportar para CSV</button>
-                    <button id="export-pdf-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all">Exportar para PDF</button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <div class="bg-gray-50 rounded-lg p-4 shadow-inner">
-                        <h3 class="text-lg font-bold text-gray-700 mb-4">Disparos por Meio</h3>
-                        <div class="h-64">
-                            <canvas id="base-entries-chart"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4 shadow-inner">
-                        <h3 class="text-lg font-bold text-gray-700 mb-4">Positivos x Negativos</h3>
-                        <div class="h-64">
-                            <canvas id="positive-negative-chart"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4 shadow-inner">
-                        <h3 class="text-lg font-bold text-gray-700 mb-4">Positivos por Atendente</h3>
-                        <div class="h-64">
-                            <canvas id="by-attendant-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-8 overflow-x-auto">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">Histórico de Registros</h3>
-                    <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome da Base</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meio de Disparo</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Atendente</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Positivos</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Negativos</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversão</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evidência</th>
-                                </tr>
-                            </thead>
-                            <tbody id="entries-table-body" class="bg-white divide-y divide-gray-200">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="user-management-section" class="md:col-span-3 lg:col-span-4 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-bold text-gray-800">Gerenciar Usuários</h2>
-                    <button class="back-to-dashboard-btn bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
-                </div>
-                <div class="mt-8 overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidade</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acesso Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="user-management-table" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="password-exchange-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-bold text-gray-800">Trocar Senha</h2>
-                    <button class="back-to-dashboard-btn bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
-                </div>
-                <form id="exchange-password-form" class="space-y-4">
-                    <input type="password" name="new-password" placeholder="Nova Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Trocar Senha</button>
-                </form>
-            </div>
+        // Lidar com a criação de usuário pelo admin
+        createUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('new-user-name').value;
+            const email = document.getElementById('new-user-email').value;
+            const password = document.getElementById('new-user-password').value;
+            const unidade = document.getElementById('new-user-unidade').value;
             
-        </div>
-    </main>
+            try {
+                // A criação de usuários pelo admin diretamente não é suportada pela SDK Web.
+                // É necessário um servidor para essa função. Para esta ferramenta,
+                // vamos simular a criação apenas salvando os dados do usuário.
+                // A autenticação do novo usuário será feita apenas por email/senha.
+                const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, "users", newUserCredential.user.uid), {
+                    name, email, unidade, role: 'user'
+                });
+                showMessage(`Novo usuário (${email}) criado com sucesso!`);
+                createUserForm.reset();
+            } catch (error) {
+                showMessage(`Erro ao criar usuário: ${error.message}`);
+            }
+        });
+        
+        // Lidar com o estado de autenticação
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Usuário logado
+                currentUserId = user.uid;
+                authScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
 
-    <section id="login-section" class="flex-grow flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-lg p-8 shadow-xl w-full max-w-sm">
-            <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-16 mx-auto mb-4">
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Acesse sua Conta</h2>
-            <form id="login-form" class="space-y-4">
-                <input type="email" name="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="password" name="password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Entrar</button>
-            </form>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-600">Não tem uma conta?</p>
-                <button id="show-user-creation-btn" class="text-blue-600 hover:underline font-semibold mt-1">Criar Conta</button>
-            </div>
-        </div>
-    </section>
+                // Busca dados do perfil do usuário
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    currentUserRole = userData.role;
+                    currentUserUnit = userData.unidade;
+                    
+                    userInfoSpan.textContent = `${userData.name} (${userData.unidade})`;
+                    nomeAtendenteInput.value = userData.name;
 
-    <section id="user-creation-section" class="flex-grow flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-lg p-8 shadow-xl w-full max-w-sm">
-            <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-16 mx-auto mb-4">
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Criar Sua Conta</h2>
-            <p class="text-gray-600 text-center mb-6">Preencha os dados para começar.</p>
-            <form id="user-creation-form" class="space-y-4">
-                <input type="text" name="name" placeholder="Seu Nome" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="email" name="email" placeholder="Seu Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="text" name="unit" placeholder="Sua Unidade (ex: Oeste)" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="password" name="password" placeholder="Sua Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Criar Conta</button>
-            </form>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-600">Já tem uma conta?</p>
-                <button id="show-login-btn" class="text-blue-600 hover:underline font-semibold mt-1">Fazer Login</button>
-            </div>
-        </div>
-    </section>
-    
-    <footer class="bg-gray-800 text-gray-400 text-center p-4 text-xs no-print">
-        Sistema Projetado por Marcos Rodrigo Teixeira
-    </footer>
+                    // Mostra o painel de admin se for admin
+                    if (currentUserRole === 'admin') {
+                        adminPanel.classList.remove('hidden');
+                    } else {
+                        adminPanel.classList.add('hidden');
+                    }
+                    
+                    // Inicia o listener de dados
+                    setupDataListener();
+                }
 
+                // Configura a data atual
+                const today = new Date().toISOString().substring(0, 10);
+                document.getElementById('data').value = today;
+
+            } else {
+                // Usuário não logado
+                currentUserId = null;
+                currentUserRole = null;
+                currentUserUnit = null;
+                authScreen.classList.remove('hidden');
+                mainApp.classList.add('hidden');
+                
+                // Limpa o listener de dados e os filtros
+                if (myChart) myChart.destroy();
+                basesTableBody.innerHTML = '';
+            }
+        });
+
+        // Função para configurar o listener de dados do Firestore
+        function setupDataListener() {
+            let basesRef = collection(db, "bases");
+            let q;
+            if (currentUserRole === 'admin') {
+                q = query(basesRef);
+            } else {
+                q = query(basesRef, where("unidade", "==", currentUserUnit));
+            }
+
+            // Popula os atendentes no filtro
+            getDocs(q).then(snapshot => {
+                const atendentes = new Set();
+                snapshot.forEach(doc => {
+                    atendentes.add(doc.data().nomeAtendente);
+                });
+                filterAtendenteSelect.innerHTML = '<option value="all">Todos</option>';
+                atendentes.forEach(atendente => {
+                    filterAtendenteSelect.innerHTML += `<option value="${atendente}">${atendente}</option>`;
+                });
+            });
+
+            onSnapshot(q, (snapshot) => {
+                allBasesData = [];
+                basesTableBody.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allBasesData.push(data);
+                    const row = `
+                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-6 text-left whitespace-nowrap">${data.data}</td>
+                            <td class="py-3 px-6 text-left">${data.nomeBase}</td>
+                            <td class="py-3 px-6 text-left">${data.nomeAtendente}</td>
+                            <td class="py-3 px-6 text-left">${data.meioDisparo}</td>
+                            <td class="py-3 px-6 text-left">${data.quantidadeDisparos}</td>
+                            <td class="py-3 px-6 text-left">${data.positivos}</td>
+                            <td class="py-3 px-6 text-left">${data.negativos}</td>
+                        </tr>
+                    `;
+                    basesTableBody.innerHTML += row;
+                });
+                
+                // Gera o relatório inicial
+                generateReport('daily');
+            }, (error) => {
+                console.error("Erro ao carregar dados:", error);
+            });
+        }
+
+        // Lidar com o envio do formulário de base
+        baseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const data = {
+                    data: document.getElementById('data').value,
+                    nomeBase: document.getElementById('nomeBase').value,
+                    nomeAtendente: nomeAtendenteInput.value,
+                    meioDisparo: document.getElementById('meioDisparo').value,
+                    quantidadeDisparos: parseInt(document.getElementById('quantidadeDisparos').value),
+                    positivos: parseInt(document.getElementById('positivos').value),
+                    negativos: parseInt(document.getElementById('negativos').value),
+                    evidencia: document.getElementById('evidencia').value || "",
+                    userId: currentUserId,
+                    unidade: currentUserUnit,
+                };
+                await addDoc(collection(db, "bases"), data);
+                showMessage('Dados salvos com sucesso!');
+                baseForm.reset();
+                document.getElementById('data').value = new Date().toISOString().substring(0, 10);
+            } catch (error) {
+                showMessage(`Erro ao salvar dados: ${error.message}`);
+            }
+        });
+
+        // Lidar com o logout
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                showMessage(`Erro ao sair: ${error.message}`);
+            }
+        });
+
+        // Lógica de geração de relatórios
+        let currentReportType = 'daily';
+
+        reportDiarioBtn.addEventListener('click', () => { generateReport('daily'); });
+        reportSemanalBtn.addEventListener('click', () => { generateReport('weekly'); });
+        reportAnualBtn.addEventListener('click', () => { generateReport('yearly'); });
+        filterAtendenteSelect.addEventListener('change', () => { generateReport(currentReportType); });
+        document.getElementById('filter-meio').addEventListener('change', () => { generateReport(currentReportType); });
+        filterStartDateInput.addEventListener('change', () => { generateReport(currentReportType); });
+        filterEndDateInput.addEventListener('change', () => { generateReport(currentReportType); });
+
+        function generateReport(reportType) {
+            currentReportType = reportType;
+            const filteredData = filterData();
+            const { labels, datasets, totalDisparos, totalPositivos, totalNegativos } = processDataForChart(filteredData, reportType);
+            
+            // Atualiza o resumo
+            document.getElementById('summary-disparos').textContent = totalDisparos;
+            document.getElementById('summary-positivos').textContent = totalPositivos;
+            document.getElementById('summary-negativos').textContent = totalNegativos;
+
+            if (myChart) {
+                myChart.data.labels = labels;
+                myChart.data.datasets = datasets;
+                myChart.update();
+            } else {
+                myChart = new Chart(reportChartCanvas, {
+                    type: 'bar',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, stacked: true },
+                            x: { stacked: true }
+                        }
+                    }
+                });
+            }
+        }
+
+        function filterData() {
+            let data = [...allBasesData];
+            const atendente = filterAtendenteSelect.value;
+            const meio = document.getElementById('filter-meio').value;
+            const startDate = filterStartDateInput.value;
+            const endDate = filterEndDateInput.value;
+
+            if (atendente !== 'all') {
+                data = data.filter(base => base.nomeAtendente === atendente);
+            }
+            if (meio !== 'all') {
+                data = data.filter(base => base.meioDisparo === meio);
+            }
+            if (startDate) {
+                data = data.filter(base => base.data >= startDate);
+            }
+            if (endDate) {
+                data = data.filter(base => base.data <= endDate);
+            }
+            return data;
+        }
+
+        function processDataForChart(data, reportType) {
+            const groupedData = {};
+            let totalDisparos = 0;
+            let totalPositivos = 0;
+            let totalNegativos = 0;
+
+            data.forEach(item => {
+                const date = new Date(item.data);
+                let key;
+                if (reportType === 'daily') {
+                    key = item.data;
+                } else if (reportType === 'weekly') {
+                    const firstDayOfWeek = new Date(date.setDate(date.getDate() - date.getDay()));
+                    key = firstDayOfWeek.toISOString().substring(0, 10);
+                } else if (reportType === 'yearly') {
+                    key = date.getFullYear().toString();
+                }
+
+                if (!groupedData[key]) {
+                    groupedData[key] = { disparos: 0, positivos: 0, negativos: 0 };
+                }
+                groupedData[key].disparos += item.quantidadeDisparos;
+                groupedData[key].positivos += item.positivos;
+                groupedData[key].negativos += item.negativos;
+                
+                totalDisparos += item.quantidadeDisparos;
+                totalPositivos += item.positivos;
+                totalNegativos += item.negativos;
+            });
+
+            const labels = Object.keys(groupedData).sort();
+            const disparos = labels.map(key => groupedData[key].disparos);
+            const positivos = labels.map(key => groupedData[key].positivos);
+            const negativos = labels.map(key => groupedData[key].negativos);
+
+            const datasets = [
+                { label: 'Disparos', data: disparos, backgroundColor: 'rgba(59, 130, 246, 0.7)' },
+                { label: 'Positivos', data: positivos, backgroundColor: 'rgba(34, 197, 94, 0.7)' },
+                { label: 'Negativos', data: negativos, backgroundColor: 'rgba(239, 68, 68, 0.7)' }
+            ];
+
+            return { labels, datasets, totalDisparos, totalPositivos, totalNegativos };
+        }
+    </script>
 </body>
 </html>
