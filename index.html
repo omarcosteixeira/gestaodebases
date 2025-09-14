@@ -28,19 +28,17 @@
         let isMasterAdmin = false;
         let baseEntriesChart, positiveNegativeChart, byAttendantChart;
 
-        const loginForm = document.getElementById('login-form');
         const mainContent = document.getElementById('main-content');
-        const loginSection = document.getElementById('login-section');
-        const registerSection = document.getElementById('register-section');
         const dashboard = document.getElementById('dashboard');
         const adminDashboard = document.getElementById('admin-dashboard');
-        const registerForm = document.getElementById('register-form');
         const exchangePasswordForm = document.getElementById('exchange-password-form');
         const passwordExchangeSection = document.getElementById('password-exchange-section');
         const userManagementSection = document.getElementById('user-management-section');
         const userManagementTable = document.getElementById('user-management-table');
-        const firstTimeSetupSection = document.getElementById('first-time-setup-section');
-        const firstTimeSetupForm = document.getElementById('first-time-setup-form');
+        const userCreationSection = document.getElementById('user-creation-section');
+        const userCreationForm = document.getElementById('user-creation-form');
+        const loginSection = document.getElementById('login-section');
+        const signInForm = document.getElementById('login-form');
 
         const filterAttendant = document.getElementById('filter-attendant');
         const filterTimeframe = document.getElementById('filter-timeframe');
@@ -63,17 +61,6 @@
         
         const userProfilesCol = collection(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles');
 
-        const checkIfFirstTime = async () => {
-            const usersSnapshot = await getDocs(userProfilesCol);
-            if (usersSnapshot.empty) {
-                firstTimeSetupSection.classList.remove('hidden');
-                loginSection.classList.add('hidden');
-            } else {
-                firstTimeSetupSection.classList.add('hidden');
-                loginSection.classList.remove('hidden');
-            }
-        }
-
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDocRef = doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', user.uid);
@@ -86,7 +73,7 @@
 
                     mainContent.classList.remove('hidden');
                     loginSection.classList.add('hidden');
-                    firstTimeSetupSection.classList.add('hidden');
+                    userCreationSection.classList.add('hidden');
                     
                     if (isMasterAdmin) {
                         adminDashboard.classList.remove('hidden');
@@ -101,16 +88,27 @@
                 }
             } else {
                 mainContent.classList.add('hidden');
-                loginSection.classList.remove('hidden');
-                firstTimeSetupSection.classList.add('hidden');
-                checkIfFirstTime();
+                loginSection.classList.add('hidden');
+                userCreationSection.classList.add('hidden');
+                
+                getDocs(userProfilesCol).then((snapshot) => {
+                    const isFirstUser = snapshot.empty;
+                    if (isFirstUser) {
+                        userCreationSection.classList.remove('hidden');
+                    } else {
+                        loginSection.classList.remove('hidden');
+                    }
+                }).catch(error => {
+                    console.error("Erro ao verificar o estado inicial: ", error);
+                    loginSection.classList.remove('hidden');
+                });
             }
         });
 
-        loginForm.addEventListener('submit', async (e) => {
+        signInForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = loginForm.email.value;
-            const password = loginForm.password.value;
+            const email = signInForm.email.value;
+            const password = signInForm.password.value;
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
@@ -118,50 +116,30 @@
             }
         });
 
-        firstTimeSetupForm.addEventListener('submit', async (e) => {
+        userCreationForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = firstTimeSetupForm.email.value;
-            const password = firstTimeSetupForm.password.value;
-            const name = firstTimeSetupForm.name.value;
-            const unit = firstTimeSetupForm.unit.value;
+            const email = userCreationForm.email.value;
+            const password = userCreationForm.password.value;
+            const name = userCreationForm.name.value;
+            const unit = userCreationForm.unit.value;
             
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', userCredential.user.uid), {
-                    email: email,
-                    name: name,
-                    unit: unit,
-                    role: 'admin',
-                    hasFullAccess: true
-                });
-                alert("Conta de administrador criada com sucesso! Você será redirecionado para o painel.");
-                firstTimeSetupForm.reset();
-            } catch (error) {
-                alert("Erro ao criar a conta de administrador: " + error.message);
-            }
-        });
+                const usersSnapshot = await getDocs(userProfilesCol);
+                const isFirstUser = usersSnapshot.empty;
+                const hasFullAccess = isFirstUser;
 
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = registerForm.email.value;
-            const password = registerForm.password.value;
-            const name = registerForm.name.value;
-            const unit = registerForm.unit.value;
-            const hasFullAccess = registerForm.fullAccess.checked;
-            
-            try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await setDoc(doc(db, 'artifacts', 'gestaodebasesoeste-b8648', 'public', 'data', 'user_profiles', userCredential.user.uid), {
                     email: email,
                     name: name,
                     unit: unit,
-                    role: 'user',
+                    role: isFirstUser ? 'admin' : 'user',
                     hasFullAccess: hasFullAccess
                 });
-                alert("Usuário registrado com sucesso!");
-                registerForm.reset();
+                alert("Conta criada com sucesso! Você será redirecionado para o painel.");
+                userCreationForm.reset();
             } catch (error) {
-                alert("Erro ao registrar usuário: " + error.message);
+                alert("Erro ao criar a conta: " + error.message);
             }
         });
 
@@ -187,19 +165,19 @@
             dashboard.classList.add('hidden');
             userManagementSection.classList.add('hidden');
             passwordExchangeSection.classList.add('hidden');
-            registerSection.classList.remove('hidden');
+            userCreationSection.classList.remove('hidden');
         });
 
         exchangePasswordBtn.addEventListener('click', () => {
             dashboard.classList.add('hidden');
             userManagementSection.classList.add('hidden');
-            registerSection.classList.add('hidden');
+            userCreationSection.classList.add('hidden');
             passwordExchangeSection.classList.remove('hidden');
         });
 
         userManagementBtn.addEventListener('click', () => {
             dashboard.classList.add('hidden');
-            registerSection.classList.add('hidden');
+            userCreationSection.classList.add('hidden');
             passwordExchangeSection.classList.add('hidden');
             userManagementSection.classList.remove('hidden');
             loadUserManagementTable();
@@ -207,7 +185,7 @@
 
         backToDashboardBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                registerSection.classList.add('hidden');
+                userCreationSection.classList.add('hidden');
                 userManagementSection.classList.add('hidden');
                 passwordExchangeSection.classList.add('hidden');
                 dashboard.classList.remove('hidden');
@@ -633,24 +611,6 @@
                 </div>
             </div>
 
-            <div id="register-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-bold text-gray-800">Registrar Novo Usuário</h2>
-                    <button class="back-to-dashboard-btn bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-all">Voltar</button>
-                </div>
-                <form id="register-form" class="space-y-4">
-                    <input type="email" name="email" placeholder="Email do Usuário" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="password" name="password" placeholder="Senha Temporária" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="text" name="name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="text" name="unit" placeholder="Unidade (ex: Oeste)" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" id="fullAccess" name="fullAccess" class="rounded text-blue-600 focus:ring-blue-500">
-                        <label for="fullAccess" class="text-gray-700">Conceder acesso total (admin)</label>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Registrar</button>
-                </form>
-            </div>
-
             <div id="password-exchange-section" class="md:col-span-3 bg-white rounded-lg p-6 shadow-md space-y-4 hidden">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-gray-800">Trocar Senha</h2>
@@ -665,7 +625,7 @@
         </div>
     </main>
 
-    <section id="login-section" class="flex-grow flex items-center justify-center p-4 hidden">
+    <section id="login-section" class="flex-grow flex items-center justify-center p-4">
         <div class="bg-white rounded-lg p-8 shadow-xl w-full max-w-sm">
             <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-16 mx-auto mb-4">
             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Acesse sua Conta</h2>
@@ -677,14 +637,14 @@
         </div>
     </section>
 
-    <section id="first-time-setup-section" class="flex-grow flex items-center justify-center p-4 hidden">
+    <section id="user-creation-section" class="flex-grow flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-lg p-8 shadow-xl w-full max-w-sm">
             <img src="https://i.imgur.com/8Q89eJ2.png" alt="Logo Gestão de Bases Oeste" class="h-16 mx-auto mb-4">
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Configuração Inicial</h2>
-            <p class="text-gray-600 text-center mb-6">Este será o seu usuário administrador.</p>
-            <form id="first-time-setup-form" class="space-y-4">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Criar Sua Conta</h2>
+            <p class="text-gray-600 text-center mb-6">Preencha os dados para começar.</p>
+            <form id="user-creation-form" class="space-y-4">
                 <input type="text" name="name" placeholder="Seu Nome" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="email" name="email" placeholder="Seu Email (Usuário Admin)" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="email" name="email" placeholder="Seu Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <input type="text" name="unit" placeholder="Sua Unidade (ex: Oeste)" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <input type="password" name="password" placeholder="Sua Senha" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all">Criar Conta</button>
