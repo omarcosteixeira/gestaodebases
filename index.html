@@ -563,23 +563,27 @@
         // Função para renderizar a tabela de bases
         function renderBasesTable(data) {
             basesTableBody.innerHTML = '';
-            data.forEach((item) => {
-                const row = `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-6 text-left whitespace-nowrap">${item.data}</td>
-                        <td class="py-3 px-6 text-left">${item.nomeBase}</td>
-                        <td class="py-3 px-6 text-left">${item.nomeAtendente}</td>
-                        <td class="py-3 px-6 text-left">${item.meioDisparo}</td>
-                        <td class="py-3 px-6 text-left">${item.quantidadeDisparos}</td>
-                        <td class="py-3 px-6 text-left">${item.positivos}</td>
-                        <td class="py-3 px-6 text-left">${item.negativos}</td>
-                        <td class="py-3 px-6 text-center">
-                            <button onclick="deleteBase('${item.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-md font-semibold hover:bg-red-600 transition">Excluir</button>
-                        </td>
-                    </tr>
-                `;
-                basesTableBody.innerHTML += row;
-            });
+            if (data.length === 0) {
+                basesTableBody.innerHTML = `<tr><td colspan="8" class="text-center py-4">Nenhum dado encontrado para esta seleção.</td></tr>`;
+            } else {
+                data.forEach((item) => {
+                    const row = `
+                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-6 text-left whitespace-nowrap">${item.data}</td>
+                            <td class="py-3 px-6 text-left">${item.nomeBase}</td>
+                            <td class="py-3 px-6 text-left">${item.nomeAtendente}</td>
+                            <td class="py-3 px-6 text-left">${item.meioDisparo}</td>
+                            <td class="py-3 px-6 text-left">${item.quantidadeDisparos}</td>
+                            <td class="py-3 px-6 text-left">${item.positivos}</td>
+                            <td class="py-3 px-6 text-left">${item.negativos}</td>
+                            <td class="py-3 px-6 text-center">
+                                <button onclick="deleteBase('${item.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-md font-semibold hover:bg-red-600 transition">Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                    basesTableBody.innerHTML += row;
+                });
+            }
         }
 
         // Função para excluir uma base
@@ -645,6 +649,18 @@
         function generateReport(reportType) {
             currentReportType = reportType;
             const filteredData = filterData();
+            
+            // Se não houver dados, exibe uma mensagem no gráfico
+            if (filteredData.length === 0) {
+                if (myChart) {
+                    myChart.destroy();
+                }
+                reportChartCanvas.style.display = 'none';
+                return;
+            }
+            
+            reportChartCanvas.style.display = 'block';
+
             const { labels, datasets, totalDisparos, totalPositivos, totalNegativos } = processDataForChart(filteredData, reportType);
             
             document.getElementById('summary-disparos').textContent = totalDisparos;
