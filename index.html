@@ -145,6 +145,12 @@
                             <div><span class="font-medium">Total de Negativos:</span> <span id="summary-negativos" class="font-bold">0</span></div>
                         </div>
                     </div>
+
+                    <!-- Botões de Exportação -->
+                    <div class="mt-6 flex justify-end space-x-4">
+                        <button id="export-pdf-btn" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-semibold hover:bg-gray-600 transition duration-300 shadow-md">Exportar PDF</button>
+                        <button id="export-excel-btn" class="bg-green-500 text-white px-4 py-2 rounded-xl font-semibold hover:bg-green-600 transition duration-300 shadow-md">Exportar Excel</button>
+                    </div>
                     
                     <!-- Tabela de Dados Brutos -->
                     <div class="mt-8 overflow-x-auto">
@@ -232,6 +238,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <script type="module">
         // Importações necessárias para a versão modular do Firebase
@@ -295,6 +303,8 @@
         const closeModalBtn = document.getElementById('close-modal');
         const confirmActionBtn = document.getElementById('confirm-action');
         const usersTableBody = document.getElementById('users-table-body');
+        const exportPdfBtn = document.getElementById('export-pdf-btn');
+        const exportExcelBtn = document.getElementById('export-excel-btn');
 
         // Função para mostrar mensagens em um modal
         function showMessage(message, isConfirmation = false, onConfirm = null) {
@@ -688,14 +698,19 @@
             } else {
                 // Cria uma nova instância do gráfico se ela não existir
                 myChart = new Chart(reportChartCanvas, {
-                    type: 'bar',
+                    type: 'line', // Alterado para gráfico de linhas
                     data: { labels, datasets },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
-                            y: { beginAtZero: true, stacked: true },
-                            x: { stacked: true }
+                            y: { beginAtZero: true, stacked: false }, // Retirado stacked para linhas
+                            x: { stacked: false }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
                         }
                     }
                 });
@@ -760,13 +775,116 @@
             const negativos = labels.map(key => groupedData[key].negativos);
 
             const datasets = [
-                { label: 'Disparos', data: disparos, backgroundColor: 'rgba(59, 130, 246, 0.7)' },
-                { label: 'Positivos', data: positivos, backgroundColor: 'rgba(34, 197, 94, 0.7)' },
-                { label: 'Negativos', data: negativos, backgroundColor: 'rgba(239, 68, 68, 0.7)' }
+                {
+                    label: 'Disparos',
+                    data: disparos,
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: 'Positivos',
+                    data: positivos,
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: 'Negativos',
+                    data: negativos,
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                    fill: false,
+                    tension: 0.1
+                }
             ];
 
             return { labels, datasets, totalDisparos, totalPositivos, totalNegativos };
         }
+
+        // Lógica de exportação para PDF e Excel
+        exportPdfBtn.addEventListener('click', async () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'a4');
+            const margin = 20;
+            const element = document.getElementById('report-summary');
+            const basesTable = document.getElementById('bases-table-body');
+            const chartCanvas = document.getElementById('reportChart');
+            let y = margin;
+
+            // Título do relatório
+            doc.setFontSize(18);
+            doc.text("Relatório de Bases", margin, y);
+            y += 20;
+
+            // Adiciona o gráfico como imagem
+            if (chartCanvas && !chartCanvas.classList.contains('hidden')) {
+                const imgData = chartCanvas.toDataURL('image/png');
+                const imgWidth = 550;
+                const imgHeight = (chartCanvas.height * imgWidth) / chartCanvas.width;
+                doc.addImage(imgData, 'PNG', margin, y, imgWidth, imgHeight);
+                y += imgHeight + 20;
+            }
+
+            // Adiciona o resumo do relatório
+            doc.setFontSize(14);
+            doc.text("Resumo:", margin, y);
+            y += 15;
+            const summaryText = document.getElementById('report-summary').innerText;
+            doc.setFontSize(10);
+            const summaryLines = doc.splitTextToSize(summaryText, 550);
+            doc.text(summaryLines, margin, y);
+            y += doc.getTextDimensions(summaryLines).h + 20;
+
+            // Adiciona a tabela
+            const headers = [['Data', 'Base', 'Atendente', 'Meio', 'Disparos', 'Positivos', 'Negativos']];
+            const data = Array.from(basesTable.rows).map(row => Array.from(row.cells).slice(0, 7).map(cell => cell.innerText));
+            
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: y,
+                theme: 'striped',
+                headStyles: { fillColor: [59, 130, 246] },
+                margin: { top: margin, bottom: margin, left: margin, right: margin }
+            });
+
+            doc.save("Relatorio_de_Bases.pdf");
+            showMessage('Relatório em PDF gerado com sucesso!');
+        });
+
+        exportExcelBtn.addEventListener('click', () => {
+            const data = filterData();
+            if (data.length === 0) {
+                showMessage('Não há dados para exportar.');
+                return;
+            }
+
+            const header = ["Data", "Nome da Base", "Nome do Atendente", "Meio de Disparo", "Quantidade de Disparos", "Positivos", "Negativos", "Evidência"];
+            const rows = data.map(item => [
+                item.data,
+                item.nomeBase,
+                item.nomeAtendente,
+                item.meioDisparo,
+                item.quantidadeDisparos,
+                item.positivos,
+                item.negativos,
+                item.evidencia
+            ]);
+
+            let csvContent = "data:text/csv;charset=utf-8," + header.join(";") + "\n" + rows.map(row => row.join(";")).join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "relatorio_bases.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showMessage('Relatório em Excel (CSV) gerado com sucesso!');
+        });
     </script>
 </body>
 </html>
