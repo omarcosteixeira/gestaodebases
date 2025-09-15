@@ -659,8 +659,7 @@
         filterStartDateInput.addEventListener('change', () => { generateReport(currentReportType); });
         filterEndDateInput.addEventListener('change', () => { generateReport(currentReportType); });
 
-        function generateReport(reportType) {
-            currentReportType = reportType;
+        function generateReport() {
             const filteredData = filterData();
             
             // Se não houver dados, destrói o gráfico e oculta o canvas com a mensagem
@@ -683,7 +682,7 @@
             reportChartCanvas.classList.remove('hidden');
             noDataMessage.classList.add('hidden');
 
-            const { labels, datasets, totalDisparos, totalPositivos, totalNegativos } = processDataForChart(filteredData, reportType);
+            const { labels, datasets, totalDisparos, totalPositivos, totalNegativos } = processDataForChart(filteredData);
             
             document.getElementById('summary-disparos').textContent = totalDisparos;
             document.getElementById('summary-positivos').textContent = totalPositivos;
@@ -698,15 +697,11 @@
             } else {
                 // Cria uma nova instância do gráfico se ela não existir
                 myChart = new Chart(reportChartCanvas, {
-                    type: 'line', // Alterado para gráfico de linhas
+                    type: 'pie',
                     data: { labels, datasets },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: {
-                            y: { beginAtZero: true, stacked: false }, // Retirado stacked para linhas
-                            x: { stacked: false }
-                        },
                         plugins: {
                             legend: {
                                 display: true
@@ -739,65 +734,27 @@
             return data;
         }
 
-        function processDataForChart(data, reportType) {
-            const groupedData = {};
+        function processDataForChart(data) {
             let totalDisparos = 0;
             let totalPositivos = 0;
             let totalNegativos = 0;
 
             data.forEach(item => {
-                const date = new Date(item.data + 'T00:00:00'); // Garante que a data seja interpretada corretamente
-                let key;
-                if (reportType === 'daily') {
-                    key = item.data;
-                } else if (reportType === 'weekly') {
-                    const firstDayOfWeek = new Date(date.setDate(date.getDate() - date.getDay()));
-                    key = firstDayOfWeek.toISOString().substring(0, 10);
-                } else if (reportType === 'yearly') {
-                    key = date.getFullYear().toString();
-                }
-
-                if (!groupedData[key]) {
-                    groupedData[key] = { disparos: 0, positivos: 0, negativos: 0 };
-                }
-                groupedData[key].disparos += item.quantidadeDisparos;
-                groupedData[key].positivos += item.positivos;
-                groupedData[key].negativos += item.negativos;
-                
                 totalDisparos += item.quantidadeDisparos;
                 totalPositivos += item.positivos;
                 totalNegativos += item.negativos;
             });
 
-            const labels = Object.keys(groupedData).sort();
-            const disparos = labels.map(key => groupedData[key].disparos);
-            const positivos = labels.map(key => groupedData[key].positivos);
-            const negativos = labels.map(key => groupedData[key].negativos);
+            const labels = ['Positivos', 'Negativos'];
+            const chartData = [totalPositivos, totalNegativos];
 
             const datasets = [
                 {
-                    label: 'Disparos',
-                    data: disparos,
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                    fill: false,
-                    tension: 0.1
-                },
-                {
-                    label: 'Positivos',
-                    data: positivos,
-                    borderColor: 'rgba(34, 197, 94, 1)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
-                    fill: false,
-                    tension: 0.1
-                },
-                {
-                    label: 'Negativos',
-                    data: negativos,
-                    borderColor: 'rgba(239, 68, 68, 1)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                    fill: false,
-                    tension: 0.1
+                    label: 'Resultado',
+                    data: chartData,
+                    backgroundColor: ['rgba(34, 197, 94, 0.7)', 'rgba(239, 68, 68, 0.7)'],
+                    borderColor: ['rgba(34, 197, 94, 1)', 'rgba(239, 68, 68, 1)'],
+                    borderWidth: 1
                 }
             ];
 
@@ -809,7 +766,6 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'pt', 'a4');
             const margin = 20;
-            const element = document.getElementById('report-summary');
             const basesTable = document.getElementById('bases-table-body');
             const chartCanvas = document.getElementById('reportChart');
             let y = margin;
