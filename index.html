@@ -154,6 +154,7 @@
                                     <th class="py-3 px-6 text-left">Disparos</th>
                                     <th class="py-3 px-6 text-left">Positivos</th>
                                     <th class="py-3 px-6 text-left">Negativos</th>
+                                    <th class="py-3 px-6 text-left">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="bases-table-body" class="text-gray-600 text-sm font-light">
@@ -182,7 +183,10 @@
         <div id="message-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
             <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
                 <p id="message-text" class="text-center text-gray-800 mb-4"></p>
-                <button id="close-modal" class="w-full bg-blue-600 text-white p-2 rounded-md font-semibold">OK</button>
+                <div class="flex justify-center space-x-4">
+                    <button id="close-modal" class="bg-blue-600 text-white p-2 rounded-md font-semibold hover:bg-blue-700 transition">OK</button>
+                    <button id="confirm-action" class="hidden bg-red-600 text-white p-2 rounded-md font-semibold hover:bg-red-700 transition">Confirmar</button>
+                </div>
             </div>
         </div>
 
@@ -203,7 +207,7 @@
         // Importações necessárias para a versão modular do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, onSnapshot, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Variáveis globais fornecidas pelo ambiente
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -233,6 +237,7 @@
         let currentUserUnit = null;
         let allBasesData = [];
         let myChart;
+        let currentDeleteDocId = null;
 
         // Referências aos elementos do DOM
         const authScreen = document.getElementById('auth-screen');
@@ -256,11 +261,20 @@
         const messageModal = document.getElementById('message-modal');
         const messageText = document.getElementById('message-text');
         const closeModalBtn = document.getElementById('close-modal');
+        const confirmActionBtn = document.getElementById('confirm-action');
 
         // Função para mostrar mensagens em um modal
-        function showMessage(message) {
+        function showMessage(message, isConfirmation = false, onConfirm = null) {
             messageText.textContent = message;
             messageModal.classList.remove('hidden');
+            if (isConfirmation) {
+                closeModalBtn.classList.add('hidden');
+                confirmActionBtn.classList.remove('hidden');
+                confirmActionBtn.onclick = onConfirm;
+            } else {
+                closeModalBtn.classList.remove('hidden');
+                confirmActionBtn.classList.add('hidden');
+            }
         }
         closeModalBtn.addEventListener('click', () => {
             messageModal.classList.add('hidden');
@@ -298,7 +312,8 @@
                             Não tem uma conta? <a href="#" id="show-register" class="text-blue-600 hover:underline">Cadastre-se</a>
                         </p>
                     </div>
-                `;
+                </div>
+            `;
                 document.getElementById('login-form').addEventListener('submit', handleLogin);
             });
         });
@@ -450,7 +465,7 @@
                 basesTableBody.innerHTML = '';
                 snapshot.forEach((doc) => {
                     const data = doc.data();
-                    allBasesData.push(data);
+                    allBasesData.push({ ...data, id: doc.id });
                 });
                 
                 // Gera o relatório inicial e atualiza a tabela
@@ -473,11 +488,29 @@
                         <td class="py-3 px-6 text-left">${item.quantidadeDisparos}</td>
                         <td class="py-3 px-6 text-left">${item.positivos}</td>
                         <td class="py-3 px-6 text-left">${item.negativos}</td>
+                        <td class="py-3 px-6 text-left">
+                            <button onclick="deleteBase('${item.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-md font-semibold hover:bg-red-600 transition">Excluir</button>
+                        </td>
                     </tr>
                 `;
                 basesTableBody.innerHTML += row;
             });
         }
+
+        // Função para excluir uma base
+        window.deleteBase = function(docId) {
+            currentDeleteDocId = docId;
+            showMessage('Tem certeza que deseja excluir este relatório?', true, async () => {
+                try {
+                    await deleteDoc(doc(db, "bases", currentDeleteDocId));
+                    showMessage('Relatório excluído com sucesso!');
+                } catch (error) {
+                    showMessage(`Erro ao excluir o relatório: ${error.message}`);
+                } finally {
+                    messageModal.classList.add('hidden');
+                }
+            });
+        };
 
         // Lidar com o envio do formulário de base
         baseForm.addEventListener('submit', async (e) => {
