@@ -21,17 +21,17 @@
     <div id="app" class="flex flex-1 flex-col p-4 md:p-8 mx-auto w-full max-w-screen-xl">
         <!-- Tela de Autenticação -->
         <div id="auth-screen" class="flex flex-col items-center justify-center flex-1">
-            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+            <div class="bg-white p-8 rounded-xl shadow-xl w-full max-w-md">
                 <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Gestão de bases Oeste</h1>
                 <div id="auth-form-container">
                     <form id="login-form" class="space-y-4">
-                        <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <input type="password" id="login-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition duration-300">Entrar</button>
+                        <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="password" id="login-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Entrar</button>
                     </form>
                     <div class="mt-4 text-center">
                         <p class="text-sm text-gray-600">
-                            Não tem uma conta? <a href="#" id="show-register" class="text-blue-600 hover:underline">Cadastre-se</a>
+                            Não tem uma conta? <a href="#" id="show-register" class="text-sky-600 hover:underline">Cadastre-se</a>
                         </p>
                     </div>
                 </div>
@@ -41,35 +41,35 @@
         <!-- Tela Principal da Ferramenta -->
         <div id="main-app" class="hidden flex-1 flex-col">
             <!-- Cabeçalho -->
-            <header class="bg-blue-600 text-white p-4 rounded-b-lg shadow-md mb-8 flex justify-between items-center">
+            <header class="bg-sky-600 text-white p-4 rounded-b-xl shadow-lg mb-8 flex justify-between items-center">
                 <h1 class="text-2xl font-bold">Gestão de bases Oeste</h1>
                 <div class="flex items-center space-x-4">
                     <span id="user-info" class="font-semibold text-sm"></span>
-                    <button id="logout-button" class="bg-white text-blue-600 px-4 py-2 rounded-md font-semibold hover:bg-gray-100 transition duration-300">Sair</button>
+                    <button id="logout-button" class="bg-white text-sky-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition duration-300 shadow-sm">Sair</button>
                 </div>
             </header>
 
             <!-- Seções da Ferramenta -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1">
                 <!-- Seção de Cadastro -->
-                <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg">
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Cadastro de Base</h2>
                     <form id="base-form" class="space-y-4">
                         <div>
                             <label for="data" class="block text-sm font-medium text-gray-700">Data</label>
-                            <input type="date" id="data" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="date" id="data" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
                         </div>
                         <div>
                             <label for="nomeBase" class="block text-sm font-medium text-gray-700">Nome da Base</label>
-                            <input type="text" id="nomeBase" placeholder="Ex: Campanha Verão" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="text" id="nomeBase" placeholder="Ex: Campanha Verão" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
                         </div>
                         <div>
                             <label for="nomeAtendente" class="block text-sm font-medium text-gray-700">Nome do Atendente</label>
-                            <input type="text" id="nomeAtendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="nomeAtendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
                         </div>
                         <div>
                             <label for="meioDisparo" class="block text-sm font-medium text-gray-700">Meio de Disparo</label>
-                            <select id="meioDisparo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <select id="meioDisparo" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
                                 <option value="">Selecione...</option>
                                 <option value="Email">Email</option>
                                 <option value="WhatsApp">WhatsApp</option>
@@ -78,30 +78,30 @@
                         </div>
                         <div>
                             <label for="quantidadeDisparos" class="block text-sm font-medium text-gray-700">Quantidade de Disparos</label>
-                            <input type="number" id="quantidadeDisparos" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="number" id="quantidadeDisparos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
                         </div>
                         <div>
                             <label for="positivos" class="block text-sm font-medium text-gray-700">Quantidade de Positivos</label>
-                            <input type="number" id="positivos" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="number" id="positivos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
                         </div>
                         <div>
                             <label for="negativos" class="block text-sm font-medium text-gray-700">Quantidade de Negativos</label>
-                            <input type="number" id="negativos" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="number" id="negativos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
                         </div>
                         <div>
                             <label for="evidencia" class="block text-sm font-medium text-gray-700">Evidência (URL ou Observações)</label>
-                            <input type="text" id="evidencia" placeholder="Link para o relatório ou observações" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="evidencia" placeholder="Link para o relatório ou observações" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
                         </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition duration-300">Salvar Dados</button>
+                        <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Salvar Dados</button>
                     </form>
                 </div>
 
                 <!-- Seção de Relatórios -->
-                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold text-gray-800">Relatórios</h2>
                         <div id="report-controls" class="flex space-x-2">
-                            <button id="report-diario" class="px-3 py-1 text-sm rounded-full bg-blue-500 text-white font-semibold hover:bg-blue-600 transition">Diário</button>
+                            <button id="report-diario" class="px-3 py-1 text-sm rounded-full bg-sky-500 text-white font-semibold hover:bg-sky-600 transition">Diário</button>
                             <button id="report-semanal" class="px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Semanal</button>
                             <button id="report-anual" class="px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Anual</button>
                         </div>
@@ -110,13 +110,13 @@
                     <div id="report-filters" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <div>
                             <label for="filter-atendente" class="block text-sm font-medium text-gray-700">Atendente</label>
-                            <select id="filter-atendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                            <select id="filter-atendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
                                 <option value="all">Todos</option>
                             </select>
                         </div>
                         <div>
                             <label for="filter-meio" class="block text-sm font-medium text-gray-700">Meio de Disparo</label>
-                            <select id="filter-meio" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                            <select id="filter-meio" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
                                 <option value="all">Todos</option>
                                 <option value="Email">Email</option>
                                 <option value="WhatsApp">WhatsApp</option>
@@ -125,16 +125,19 @@
                         </div>
                         <div>
                             <label for="filter-start-date" class="block text-sm font-medium text-gray-700">Data Inicial</label>
-                            <input type="date" id="filter-start-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                            <input type="date" id="filter-start-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
                         </div>
                         <div>
                             <label for="filter-end-date" class="block text-sm font-medium text-gray-700">Data Final</label>
-                            <input type="date" id="filter-end-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                            <input type="date" id="filter-end-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
                         </div>
                     </div>
                     <!-- Altura do gráfico fixada em h-80 para otimizar o espaço -->
                     <canvas id="reportChart" class="w-full h-80"></canvas>
-                    <div id="report-summary" class="mt-6 p-4 bg-gray-100 rounded-lg">
+                    <div id="no-data-message" class="hidden text-center text-gray-500 p-8">
+                        <p>Nenhum dado encontrado para esta seleção.</p>
+                    </div>
+                    <div id="report-summary" class="mt-6 p-4 bg-gray-100 rounded-xl">
                         <h3 class="text-lg font-bold text-gray-800 mb-2">Resumo</h3>
                         <div class="grid grid-cols-2 gap-4">
                             <div><span class="font-medium">Total de Disparos:</span> <span id="summary-disparos" class="font-bold">0</span></div>
@@ -146,7 +149,7 @@
                     <!-- Tabela de Dados Brutos -->
                     <div class="mt-8 overflow-x-auto">
                         <h3 class="text-lg font-bold text-gray-800 mb-2">Bases Cadastradas</h3>
-                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-xl">
                             <thead>
                                 <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                                     <th class="py-3 px-6 text-left">Data</th>
@@ -168,18 +171,18 @@
             </div>
 
             <!-- Seção de Administrador -->
-            <div id="admin-panel" class="hidden mt-8 bg-white p-6 rounded-lg shadow-lg">
+            <div id="admin-panel" class="hidden mt-8 bg-white p-6 rounded-xl shadow-lg">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">Painel do Administrador</h2>
                 
                 <!-- Formulário para Criar Novo Usuário -->
                 <div class="mb-8">
                     <h3 class="font-semibold text-gray-700 mb-2">Criar Novo Usuário</h3>
                     <form id="create-user-form" class="space-y-4">
-                        <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-md">
-                        <input type="email" id="new-user-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-md">
-                        <input type="password" id="new-user-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-md">
-                        <input type="text" id="new-user-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-md">
-                        <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-md font-semibold hover:bg-green-700 transition">Criar Usuário</button>
+                        <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <input type="email" id="new-user-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <input type="password" id="new-user-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <input type="text" id="new-user-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-xl font-semibold hover:bg-green-700 transition shadow-md">Criar Usuário</button>
                     </form>
                 </div>
 
@@ -187,7 +190,7 @@
                 <div>
                     <h3 class="font-semibold text-gray-700 mb-2">Gerenciar Usuários Existentes</h3>
                     <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-xl">
                             <thead>
                                 <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                                     <th class="py-3 px-6 text-left">Nome</th>
@@ -208,11 +211,11 @@
 
         <!-- Pop-up de mensagens -->
         <div id="message-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
-            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <div class="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
                 <p id="message-text" class="text-center text-gray-800 mb-4"></p>
                 <div class="flex justify-center space-x-4">
-                    <button id="close-modal" class="bg-blue-600 text-white p-2 rounded-md font-semibold hover:bg-blue-700 transition">OK</button>
-                    <button id="confirm-action" class="hidden bg-red-600 text-white p-2 rounded-md font-semibold hover:bg-red-700 transition">Confirmar</button>
+                    <button id="close-modal" class="bg-sky-600 text-white p-2 rounded-xl font-semibold hover:bg-sky-700 transition">OK</button>
+                    <button id="confirm-action" class="hidden bg-red-600 text-white p-2 rounded-xl font-semibold hover:bg-red-700 transition">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -284,6 +287,7 @@
         const reportAnualBtn = document.getElementById('report-anual');
         const filterAtendenteSelect = document.getElementById('filter-atendente');
         const reportChartCanvas = document.getElementById('reportChart');
+        const noDataMessage = document.getElementById('no-data-message');
         const filterStartDateInput = document.getElementById('filter-start-date');
         const filterEndDateInput = document.getElementById('filter-end-date');
         const messageModal = document.getElementById('message-modal');
@@ -314,15 +318,15 @@
             e.preventDefault();
             registerFormContainer.innerHTML = `
                 <form id="register-form" class="space-y-4">
-                    <input type="text" id="register-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="email" id="register-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="password" id="register-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="text" id="register-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition duration-300">Cadastrar</button>
+                    <input type="text" id="register-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="email" id="register-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="password" id="register-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="text" id="register-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Cadastrar</button>
                 </form>
                 <div class="mt-4 text-center">
                     <p class="text-sm text-gray-600">
-                        Já tem uma conta? <a href="#" id="show-login" class="text-blue-600 hover:underline">Entrar</a>
+                        Já tem uma conta? <a href="#" id="show-login" class="text-sky-600 hover:underline">Entrar</a>
                     </p>
                 </div>
             `;
@@ -332,13 +336,13 @@
                 e.preventDefault();
                 registerFormContainer.innerHTML = `
                     <form id="login-form" class="space-y-4">
-                        <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <input type="password" id="login-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition duration-300">Entrar</button>
+                        <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="password" id="login-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Entrar</button>
                     </form>
                     <div class="mt-4 text-center">
                         <p class="text-sm text-gray-600">
-                            Não tem uma conta? <a href="#" id="show-register" class="text-blue-600 hover:underline">Cadastre-se</a>
+                            Não tem uma conta? <a href="#" id="show-register" class="text-sky-600 hover:underline">Cadastre-se</a>
                         </p>
                     </div>
                 </div>
@@ -483,10 +487,10 @@
                         <td class="py-3 px-6 text-left">${user.email}</td>
                         <td class="py-3 px-6 text-left">${user.unidade}</td>
                         <td class="py-3 px-6 text-center">
-                            <input type="checkbox" data-user-id="${user.id}" class="form-checkbox h-4 w-4 text-blue-600 rounded" ${user.canViewAllUnits ? 'checked' : ''} ${isCurrentUser || user.role === 'admin' ? 'disabled' : ''}>
+                            <input type="checkbox" data-user-id="${user.id}" class="form-checkbox h-4 w-4 text-sky-600 rounded" ${user.canViewAllUnits ? 'checked' : ''} ${isCurrentUser || user.role === 'admin' ? 'disabled' : ''}>
                         </td>
                         <td class="py-3 px-6 text-center">
-                            <button onclick="deleteUser('${user.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-md font-semibold hover:bg-red-600 transition ${isCurrentUser || user.role === 'admin' ? 'opacity-50 cursor-not-allowed' : ''}" ${isCurrentUser || user.role === 'admin' ? 'disabled' : ''}>Excluir</button>
+                            <button onclick="deleteUser('${user.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-xl font-semibold hover:bg-red-600 transition shadow-sm ${isCurrentUser || user.role === 'admin' ? 'opacity-50 cursor-not-allowed' : ''}" ${isCurrentUser || user.role === 'admin' ? 'disabled' : ''}>Excluir</button>
                         </td>
                     </tr>
                 `;
@@ -537,23 +541,21 @@
                 // Usuário normal: consulta apenas as bases da sua unidade
                 q = query(basesRef, where("unidade", "==", currentUserUnit));
             }
-
-            getDocs(q).then(snapshot => {
-                const atendentes = new Set();
-                snapshot.forEach(doc => {
-                    atendentes.add(doc.data().nomeAtendente);
-                });
-                filterAtendenteSelect.innerHTML = '<option value="all">Todos</option>';
-                atendentes.forEach(atendente => {
-                    filterAtendenteSelect.innerHTML += `<option value="${atendente}">${atendente}</option>`;
-                });
-            });
-
+            
+            // Adiciona listener para a coleção de bases
             onSnapshot(q, (snapshot) => {
                 allBasesData = [];
+                const atendentes = new Set();
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     allBasesData.push({ ...data, id: doc.id });
+                    atendentes.add(data.nomeAtendente);
+                });
+
+                // Preenche o seletor de atendentes com os nomes encontrados
+                filterAtendenteSelect.innerHTML = '<option value="all">Todos</option>';
+                atendentes.forEach(atendente => {
+                    filterAtendenteSelect.innerHTML += `<option value="${atendente}">${atendente}</option>`;
                 });
                 
                 generateReport('daily');
@@ -579,7 +581,7 @@
                             <td class="py-3 px-6 text-left">${item.positivos}</td>
                             <td class="py-3 px-6 text-left">${item.negativos}</td>
                             <td class="py-3 px-6 text-center">
-                                <button onclick="deleteBase('${item.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-md font-semibold hover:bg-red-600 transition">Excluir</button>
+                                <button onclick="deleteBase('${item.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-xl font-semibold hover:bg-red-600 transition shadow-sm">Excluir</button>
                             </td>
                         </tr>
                     `;
@@ -627,6 +629,15 @@
             }
         });
 
+        // Lidar com o logout
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                showMessage(`Erro ao sair: ${error.message}`);
+            }
+        });
+
         // Lógica de geração de relatórios
         let currentReportType = 'daily';
 
@@ -642,16 +653,25 @@
             currentReportType = reportType;
             const filteredData = filterData();
             
-            // Se não houver dados, destrói o gráfico e oculta o canvas
+            // Se não houver dados, destrói o gráfico e oculta o canvas com a mensagem
             if (filteredData.length === 0) {
                 if (myChart) {
                     myChart.destroy();
+                    myChart = null; // Reinicia a variável para a próxima vez
                 }
-                reportChartCanvas.style.display = 'none';
+                reportChartCanvas.classList.add('hidden');
+                noDataMessage.classList.remove('hidden');
+                
+                document.getElementById('summary-disparos').textContent = 0;
+                document.getElementById('summary-positivos').textContent = 0;
+                document.getElementById('summary-negativos').textContent = 0;
+                
+                renderBasesTable(filteredData);
                 return;
             }
             
-            reportChartCanvas.style.display = 'block';
+            reportChartCanvas.classList.remove('hidden');
+            noDataMessage.classList.add('hidden');
 
             const { labels, datasets, totalDisparos, totalPositivos, totalNegativos } = processDataForChart(filteredData, reportType);
             
@@ -711,7 +731,7 @@
             let totalNegativos = 0;
 
             data.forEach(item => {
-                const date = new Date(item.data);
+                const date = new Date(item.data + 'T00:00:00'); // Garante que a data seja interpretada corretamente
                 let key;
                 if (reportType === 'daily') {
                     key = item.data;
