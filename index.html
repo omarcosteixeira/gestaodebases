@@ -451,24 +451,31 @@
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     allBasesData.push(data);
-                    const row = `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-3 px-6 text-left whitespace-nowrap">${data.data}</td>
-                            <td class="py-3 px-6 text-left">${data.nomeBase}</td>
-                            <td class="py-3 px-6 text-left">${data.nomeAtendente}</td>
-                            <td class="py-3 px-6 text-left">${data.meioDisparo}</td>
-                            <td class="py-3 px-6 text-left">${data.quantidadeDisparos}</td>
-                            <td class="py-3 px-6 text-left">${data.positivos}</td>
-                            <td class="py-3 px-6 text-left">${data.negativos}</td>
-                        </tr>
-                    `;
-                    basesTableBody.innerHTML += row;
                 });
                 
-                // Gera o relatório inicial
+                // Gera o relatório inicial e atualiza a tabela
                 generateReport('daily');
             }, (error) => {
                 console.error("Erro ao carregar dados:", error);
+            });
+        }
+
+        // Função para renderizar a tabela de bases
+        function renderBasesTable(data) {
+            basesTableBody.innerHTML = '';
+            data.forEach((item) => {
+                const row = `
+                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-6 text-left whitespace-nowrap">${item.data}</td>
+                        <td class="py-3 px-6 text-left">${item.nomeBase}</td>
+                        <td class="py-3 px-6 text-left">${item.nomeAtendente}</td>
+                        <td class="py-3 px-6 text-left">${item.meioDisparo}</td>
+                        <td class="py-3 px-6 text-left">${item.quantidadeDisparos}</td>
+                        <td class="py-3 px-6 text-left">${item.positivos}</td>
+                        <td class="py-3 px-6 text-left">${item.negativos}</td>
+                    </tr>
+                `;
+                basesTableBody.innerHTML += row;
             });
         }
 
@@ -522,10 +529,11 @@
             const filteredData = filterData();
             const { labels, datasets, totalDisparos, totalPositivos, totalNegativos } = processDataForChart(filteredData, reportType);
             
-            // Atualiza o resumo
+            // Atualiza o resumo e a tabela
             document.getElementById('summary-disparos').textContent = totalDisparos;
             document.getElementById('summary-positivos').textContent = totalPositivos;
             document.getElementById('summary-negativos').textContent = totalNegativos;
+            renderBasesTable(filteredData);
 
             if (myChart) {
                 myChart.data.labels = labels;
