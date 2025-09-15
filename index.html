@@ -132,11 +132,6 @@
                             <input type="date" id="filter-end-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
                         </div>
                     </div>
-                    <!-- Altura do gráfico fixada em h-80 para otimizar o espaço -->
-                    <canvas id="reportChart" class="w-full h-80"></canvas>
-                    <div id="no-data-message" class="hidden text-center text-gray-500 p-8">
-                        <p>Nenhum dado encontrado para esta seleção.</p>
-                    </div>
                     <div id="report-summary" class="mt-6 p-4 bg-gray-100 rounded-xl">
                         <h3 class="text-lg font-bold text-gray-800 mb-2">Resumo</h3>
                         <div class="grid grid-cols-2 gap-4">
@@ -233,11 +228,10 @@
         Sistema Projetado por Marcos Rodrigo Teixeira
     </footer>
 
-    <!-- Firebase e Chart.js -->
+    <!-- Firebase e jsPDF -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
@@ -275,7 +269,6 @@
         let currentUserUnit = null;
         let currentUserCanViewAllUnits = false;
         let allBasesData = [];
-        let myChart;
         let currentDeleteDocId = null;
 
         // Referências aos elementos do DOM
@@ -294,7 +287,6 @@
         const reportSemanalBtn = document.getElementById('report-semanal');
         const reportAnualBtn = document.getElementById('report-anual');
         const filterAtendenteSelect = document.getElementById('filter-atendente');
-        const reportChartCanvas = document.getElementById('reportChart');
         const noDataMessage = document.getElementById('no-data-message');
         const filterStartDateInput = document.getElementById('filter-start-date');
         const filterEndDateInput = document.getElementById('filter-end-date');
@@ -468,7 +460,6 @@
                 authScreen.classList.remove('hidden');
                 mainApp.classList.add('hidden');
                 
-                if (myChart) myChart.destroy();
                 basesTableBody.innerHTML = '';
             }
         });
@@ -568,7 +559,7 @@
                     filterAtendenteSelect.innerHTML += `<option value="${atendente}">${atendente}</option>`;
                 });
                 
-                generateReport('daily');
+                generateReport();
             }, (error) => {
                 console.error("Erro ao carregar dados:", error);
             });
@@ -649,67 +640,32 @@
         });
 
         // Lógica de geração de relatórios
-        let currentReportType = 'daily';
-
-        reportDiarioBtn.addEventListener('click', () => { generateReport('daily'); });
-        reportSemanalBtn.addEventListener('click', () => { generateReport('weekly'); });
-        reportAnualBtn.addEventListener('click', () => { generateReport('yearly'); });
-        filterAtendenteSelect.addEventListener('change', () => { generateReport(currentReportType); });
-        document.getElementById('filter-meio').addEventListener('change', () => { generateReport(currentReportType); });
-        filterStartDateInput.addEventListener('change', () => { generateReport(currentReportType); });
-        filterEndDateInput.addEventListener('change', () => { generateReport(currentReportType); });
+        reportDiarioBtn.addEventListener('click', () => { generateReport(); });
+        reportSemanalBtn.addEventListener('click', () => { generateReport(); });
+        reportAnualBtn.addEventListener('click', () => { generateReport(); });
+        filterAtendenteSelect.addEventListener('change', () => { generateReport(); });
+        document.getElementById('filter-meio').addEventListener('change', () => { generateReport(); });
+        filterStartDateInput.addEventListener('change', () => { generateReport(); });
+        filterEndDateInput.addEventListener('change', () => { generateReport(); });
 
         function generateReport() {
             const filteredData = filterData();
             
-            const { labels, datasets, totalDisparos, totalPositivos, totalNegativos } = processDataForChart(filteredData);
-            
-            // Se não houver dados ou a soma dos positivos e negativos for zero, esconde o gráfico
-            if (filteredData.length === 0 || (totalPositivos + totalNegativos === 0)) {
-                if (myChart) {
-                    myChart.destroy();
-                    myChart = null; // Reinicia a variável para a próxima vez
-                }
-                reportChartCanvas.classList.add('hidden');
-                noDataMessage.classList.remove('hidden');
-                
-                document.getElementById('summary-disparos').textContent = 0;
-                document.getElementById('summary-positivos').textContent = 0;
-                document.getElementById('summary-negativos').textContent = 0;
-                
-                renderBasesTable(filteredData);
-                return;
-            }
-            
-            reportChartCanvas.classList.remove('hidden');
-            noDataMessage.classList.add('hidden');
+            let totalDisparos = 0;
+            let totalPositivos = 0;
+            let totalNegativos = 0;
 
+            filteredData.forEach(item => {
+                totalDisparos += item.quantidadeDisparos;
+                totalPositivos += item.positivos;
+                totalNegativos += item.negativos;
+            });
+            
             document.getElementById('summary-disparos').textContent = totalDisparos;
             document.getElementById('summary-positivos').textContent = totalPositivos;
             document.getElementById('summary-negativos').textContent = totalNegativos;
+            
             renderBasesTable(filteredData);
-
-            // Se o gráfico já existe, apenas atualiza os dados para melhor performance
-            if (myChart) {
-                myChart.data.labels = labels;
-                myChart.data.datasets = datasets;
-                myChart.update();
-            } else {
-                // Cria uma nova instância do gráfico se ela não existir
-                myChart = new Chart(reportChartCanvas, {
-                    type: 'pie',
-                    data: { labels, datasets },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true
-                            }
-                        }
-                    }
-                });
-            }
         }
 
         function filterData() {
@@ -734,55 +690,18 @@
             return data;
         }
 
-        function processDataForChart(data) {
-            let totalDisparos = 0;
-            let totalPositivos = 0;
-            let totalNegativos = 0;
-
-            data.forEach(item => {
-                totalDisparos += item.quantidadeDisparos;
-                totalPositivos += item.positivos;
-                totalNegativos += item.negativos;
-            });
-
-            const labels = ['Positivos', 'Negativos'];
-            const chartData = [totalPositivos, totalNegativos];
-
-            const datasets = [
-                {
-                    label: 'Resultado',
-                    data: chartData,
-                    backgroundColor: ['rgba(34, 197, 94, 0.7)', 'rgba(239, 68, 68, 0.7)'],
-                    borderColor: ['rgba(34, 197, 94, 1)', 'rgba(239, 68, 68, 1)'],
-                    borderWidth: 1
-                }
-            ];
-
-            return { labels, datasets, totalDisparos, totalPositivos, totalNegativos };
-        }
-
         // Lógica de exportação para PDF e Excel
         exportPdfBtn.addEventListener('click', async () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'pt', 'a4');
             const margin = 20;
             const basesTable = document.getElementById('bases-table-body');
-            const chartCanvas = document.getElementById('reportChart');
             let y = margin;
 
             // Título do relatório
             doc.setFontSize(18);
             doc.text("Relatório de Bases", margin, y);
             y += 20;
-
-            // Adiciona o gráfico como imagem
-            if (chartCanvas && !chartCanvas.classList.contains('hidden')) {
-                const imgData = chartCanvas.toDataURL('image/png');
-                const imgWidth = 550;
-                const imgHeight = (chartCanvas.height * imgWidth) / chartCanvas.width;
-                doc.addImage(imgData, 'PNG', margin, y, imgWidth, imgHeight);
-                y += imgHeight + 20;
-            }
 
             // Adiciona o resumo do relatório
             doc.setFontSize(14);
