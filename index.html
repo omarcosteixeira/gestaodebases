@@ -123,6 +123,12 @@
                                 <option value="Telefone">Telefone</option>
                             </select>
                         </div>
+                        <div id="filter-unidade-container" class="hidden">
+                            <label for="filter-unidade" class="block text-sm font-medium text-gray-700">Unidade</label>
+                            <select id="filter-unidade" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
+                                <option value="all">Todas</option>
+                            </select>
+                        </div>
                         <div>
                             <label for="filter-start-date" class="block text-sm font-medium text-gray-700">Data Inicial</label>
                             <input type="date" id="filter-start-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
@@ -287,6 +293,7 @@
         const reportSemanalBtn = document.getElementById('report-semanal');
         const reportAnualBtn = document.getElementById('report-anual');
         const filterAtendenteSelect = document.getElementById('filter-atendente');
+        const filterUnidadeSelect = document.getElementById('filter-unidade');
         const noDataMessage = document.getElementById('no-data-message');
         const filterStartDateInput = document.getElementById('filter-start-date');
         const filterEndDateInput = document.getElementById('filter-end-date');
@@ -297,6 +304,7 @@
         const usersTableBody = document.getElementById('users-table-body');
         const exportPdfBtn = document.getElementById('export-pdf-btn');
         const exportExcelBtn = document.getElementById('export-excel-btn');
+        const filterUnidadeContainer = document.getElementById('filter-unidade-container');
 
         // Função para mostrar mensagens em um modal
         function showMessage(message, isConfirmation = false, onConfirm = null) {
@@ -444,9 +452,11 @@
 
                     if (currentUserRole === 'admin') {
                         adminPanel.classList.remove('hidden');
+                        filterUnidadeContainer.classList.remove('hidden');
                         setupUsersListener();
                     } else {
                         adminPanel.classList.add('hidden');
+                        filterUnidadeContainer.classList.add('hidden');
                     }
                     
                     setupDataListener();
@@ -547,10 +557,12 @@
             onSnapshot(q, (snapshot) => {
                 allBasesData = [];
                 const atendentes = new Set();
+                const unidades = new Set();
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     allBasesData.push({ ...data, id: doc.id });
                     atendentes.add(data.nomeAtendente);
+                    unidades.add(data.unidade);
                 });
 
                 // Preenche o seletor de atendentes com os nomes encontrados
@@ -558,6 +570,14 @@
                 atendentes.forEach(atendente => {
                     filterAtendenteSelect.innerHTML += `<option value="${atendente}">${atendente}</option>`;
                 });
+                
+                // Preenche o seletor de unidades apenas para admins
+                if (currentUserRole === 'admin' || currentUserCanViewAllUnits) {
+                    filterUnidadeSelect.innerHTML = '<option value="all">Todas</option>';
+                    unidades.forEach(unidade => {
+                        filterUnidadeSelect.innerHTML += `<option value="${unidade}">${unidade}</option>`;
+                    });
+                }
                 
                 generateReport();
             }, (error) => {
@@ -645,6 +665,9 @@
         reportAnualBtn.addEventListener('click', () => { generateReport(); });
         filterAtendenteSelect.addEventListener('change', () => { generateReport(); });
         document.getElementById('filter-meio').addEventListener('change', () => { generateReport(); });
+        if (filterUnidadeSelect) {
+            filterUnidadeSelect.addEventListener('change', () => { generateReport(); });
+        }
         filterStartDateInput.addEventListener('change', () => { generateReport(); });
         filterEndDateInput.addEventListener('change', () => { generateReport(); });
 
@@ -672,6 +695,7 @@
             let data = [...allBasesData];
             const atendente = filterAtendenteSelect.value;
             const meio = document.getElementById('filter-meio').value;
+            const unidade = filterUnidadeSelect ? filterUnidadeSelect.value : currentUserUnit;
             const startDate = filterStartDateInput.value;
             const endDate = filterEndDateInput.value;
 
@@ -680,6 +704,9 @@
             }
             if (meio !== 'all') {
                 data = data.filter(base => base.meioDisparo === meio);
+            }
+            if (unidade !== 'all') {
+                data = data.filter(base => base.unidade === unidade);
             }
             if (startDate) {
                 data = data.filter(base => base.data >= startDate);
