@@ -17,7 +17,8 @@
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
-    <div id="app" class="flex flex-1 flex-col p-4 md:p-8">
+    <!-- Container principal com largura limitada para melhor visualização em telas grandes -->
+    <div id="app" class="flex flex-1 flex-col p-4 md:p-8 mx-auto w-full max-w-screen-xl">
         <!-- Tela de Autenticação -->
         <div id="auth-screen" class="flex flex-col items-center justify-center flex-1">
             <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
@@ -131,6 +132,7 @@
                             <input type="date" id="filter-end-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
                         </div>
                     </div>
+                    <!-- Altura do gráfico fixada em h-80 para otimizar o espaço -->
                     <canvas id="reportChart" class="w-full h-80"></canvas>
                     <div id="report-summary" class="mt-6 p-4 bg-gray-100 rounded-lg">
                         <h3 class="text-lg font-bold text-gray-800 mb-2">Resumo</h3>
@@ -625,15 +627,6 @@
             }
         });
 
-        // Lidar com o logout
-        logoutButton.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                showMessage(`Erro ao sair: ${error.message}`);
-            }
-        });
-
         // Lógica de geração de relatórios
         let currentReportType = 'daily';
 
@@ -649,7 +642,7 @@
             currentReportType = reportType;
             const filteredData = filterData();
             
-            // Se não houver dados, exibe uma mensagem no gráfico
+            // Se não houver dados, destrói o gráfico e oculta o canvas
             if (filteredData.length === 0) {
                 if (myChart) {
                     myChart.destroy();
@@ -667,11 +660,13 @@
             document.getElementById('summary-negativos').textContent = totalNegativos;
             renderBasesTable(filteredData);
 
+            // Se o gráfico já existe, apenas atualiza os dados para melhor performance
             if (myChart) {
                 myChart.data.labels = labels;
                 myChart.data.datasets = datasets;
                 myChart.update();
             } else {
+                // Cria uma nova instância do gráfico se ela não existir
                 myChart = new Chart(reportChartCanvas, {
                     type: 'bar',
                     data: { labels, datasets },
