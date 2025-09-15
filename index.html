@@ -428,7 +428,8 @@
                     const userData = userDoc.data();
                     currentUserRole = userData.role;
                     currentUserUnit = userData.unidade;
-                    currentUserCanViewAllUnits = userData.canViewAllUnits;
+                    // Correção: Garante que admins sempre podem ver todas as bases
+                    currentUserCanViewAllUnits = userData.canViewAllUnits || (currentUserRole === 'admin');
                     
                     userInfoSpan.textContent = `${userData.name} (${userData.unidade})`;
                     nomeAtendenteInput.value = userData.name;
@@ -531,8 +532,10 @@
             let basesRef = collection(db, "bases");
             let q;
             if (currentUserRole === 'admin' || currentUserCanViewAllUnits) {
+                // Admin ou usuário com permissão de ver tudo: consulta todas as bases
                 q = query(basesRef);
             } else {
+                // Usuário normal: consulta apenas as bases da sua unidade
                 q = query(basesRef, where("unidade", "==", currentUserUnit));
             }
 
