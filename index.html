@@ -56,7 +56,7 @@
                     <form id="base-form" class="space-y-4">
                         <div>
                             <label for="data" class="block text-sm font-medium text-gray-700">Data</label>
-                            <input type="date" id="data" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" readonly>
+                            <input type="date" id="data" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label for="nomeBase" class="block text-sm font-medium text-gray-700">Nome da Base</label>
@@ -444,9 +444,6 @@
                     setupDataListener();
                 }
 
-                const today = new Date().toISOString().substring(0, 10);
-                document.getElementById('data').value = today;
-
             } else {
                 currentUserId = null;
                 currentUserRole = null;
@@ -623,7 +620,6 @@
                 await addDoc(collection(db, "bases"), data);
                 showMessage('Dados salvos com sucesso!');
                 baseForm.reset();
-                document.getElementById('data').value = new Date().toISOString().substring(0, 10);
             } catch (error) {
                 showMessage(`Erro ao salvar dados: ${error.message}`);
             }
