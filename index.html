@@ -662,8 +662,10 @@
         function generateReport() {
             const filteredData = filterData();
             
-            // Se não houver dados, destrói o gráfico e oculta o canvas com a mensagem
-            if (filteredData.length === 0) {
+            const { labels, datasets, totalDisparos, totalPositivos, totalNegativos } = processDataForChart(filteredData);
+            
+            // Se não houver dados ou a soma dos positivos e negativos for zero, esconde o gráfico
+            if (filteredData.length === 0 || (totalPositivos + totalNegativos === 0)) {
                 if (myChart) {
                     myChart.destroy();
                     myChart = null; // Reinicia a variável para a próxima vez
@@ -682,8 +684,6 @@
             reportChartCanvas.classList.remove('hidden');
             noDataMessage.classList.add('hidden');
 
-            const { labels, datasets, totalDisparos, totalPositivos, totalNegativos } = processDataForChart(filteredData);
-            
             document.getElementById('summary-disparos').textContent = totalDisparos;
             document.getElementById('summary-positivos').textContent = totalPositivos;
             document.getElementById('summary-negativos').textContent = totalNegativos;
