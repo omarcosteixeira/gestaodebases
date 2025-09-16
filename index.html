@@ -45,6 +45,7 @@
                 <h1 class="text-2xl font-bold">Gestão de bases Oeste</h1>
                 <div class="flex items-center space-x-4">
                     <span id="user-info" class="font-semibold text-sm"></span>
+                    <button id="change-password-btn" class="bg-white text-sky-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition duration-300 shadow-sm">Mudar Senha</button>
                     <button id="logout-button" class="bg-white text-sky-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition duration-300 shadow-sm">Sair</button>
                 </div>
             </header>
@@ -227,6 +228,21 @@
             </div>
         </div>
 
+        <!-- Modal para Mudar Senha -->
+        <div id="password-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Mudar Senha</h3>
+                <form id="change-password-form" class="space-y-4">
+                    <input type="password" id="new-password" placeholder="Nova Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="password" id="confirm-new-password" placeholder="Confirme a Nova Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Mudar Senha</button>
+                </form>
+                <div class="flex justify-center mt-4">
+                    <button id="close-password-modal" class="bg-gray-400 text-white p-2 rounded-xl font-semibold hover:bg-gray-500 transition">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Rodapé -->
@@ -244,7 +260,7 @@
     <script type="module">
         // Importações necessárias para a versão modular do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, onSnapshot, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Variáveis globais fornecidas pelo ambiente
@@ -288,6 +304,7 @@
         const createUserForm = document.getElementById('create-user-form');
         const userInfoSpan = document.getElementById('user-info');
         const logoutButton = document.getElementById('logout-button');
+        const changePasswordBtn = document.getElementById('change-password-btn');
         const basesTableBody = document.getElementById('bases-table-body');
         const reportDiarioBtn = document.getElementById('report-diario');
         const reportSemanalBtn = document.getElementById('report-semanal');
@@ -305,6 +322,9 @@
         const exportPdfBtn = document.getElementById('export-pdf-btn');
         const exportExcelBtn = document.getElementById('export-excel-btn');
         const filterUnidadeContainer = document.getElementById('filter-unidade-container');
+        const passwordModal = document.getElementById('password-modal');
+        const changePasswordForm = document.getElementById('change-password-form');
+        const closePasswordModalBtn = document.getElementById('close-password-modal');
 
         // Função para mostrar mensagens em um modal
         function showMessage(message, isConfirmation = false, onConfirm = null) {
@@ -430,6 +450,41 @@
                 showMessage(`Erro ao criar usuário: ${error.message}`);
             }
         });
+
+        // Lidar com a troca de senha do usuário
+        changePasswordBtn.addEventListener('click', () => {
+            passwordModal.classList.remove('hidden');
+        });
+
+        closePasswordModalBtn.addEventListener('click', () => {
+            passwordModal.classList.add('hidden');
+            changePasswordForm.reset();
+        });
+
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('new-password').value;
+            const confirmNewPassword = document.getElementById('confirm-new-password').value;
+
+            if (newPassword !== confirmNewPassword) {
+                showMessage("As senhas não coincidem. Por favor, tente novamente.");
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showMessage("A senha deve ter no mínimo 6 caracteres.");
+                return;
+            }
+
+            try {
+                await updatePassword(auth.currentUser, newPassword);
+                showMessage("Senha alterada com sucesso!");
+                passwordModal.classList.add('hidden');
+                changePasswordForm.reset();
+            } catch (error) {
+                showMessage(`Erro ao mudar a senha: ${error.message}`);
+            }
+        });
         
         // Lidar com o estado de autenticação
         onAuthStateChanged(auth, async (user) => {
@@ -542,11 +597,23 @@
         };
 
         // Função para configurar o listener de dados do Firestore
-        function setupDataListener() {
+        async function setupDataListener() {
             let basesRef = collection(db, "bases");
             let q;
+
+            // Para admins, buscamos todas as unidades antes de filtrar os dados
             if (currentUserRole === 'admin' || currentUserCanViewAllUnits) {
-                // Admin ou usuário com permissão de ver tudo: consulta todas as bases
+                const usersSnapshot = await getDocs(collection(db, "users"));
+                const allUnits = new Set();
+                usersSnapshot.forEach(doc => {
+                    allUnits.add(doc.data().unidade);
+                });
+
+                filterUnidadeSelect.innerHTML = '<option value="all">Todas</option>';
+                allUnits.forEach(unidade => {
+                    filterUnidadeSelect.innerHTML += `<option value="${unidade}">${unidade}</option>`;
+                });
+                
                 q = query(basesRef);
             } else {
                 // Usuário normal: consulta apenas as bases da sua unidade
@@ -557,12 +624,10 @@
             onSnapshot(q, (snapshot) => {
                 allBasesData = [];
                 const atendentes = new Set();
-                const unidades = new Set();
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     allBasesData.push({ ...data, id: doc.id });
                     atendentes.add(data.nomeAtendente);
-                    unidades.add(data.unidade);
                 });
 
                 // Preenche o seletor de atendentes com os nomes encontrados
@@ -570,14 +635,6 @@
                 atendentes.forEach(atendente => {
                     filterAtendenteSelect.innerHTML += `<option value="${atendente}">${atendente}</option>`;
                 });
-                
-                // Preenche o seletor de unidades apenas para admins
-                if (currentUserRole === 'admin' || currentUserCanViewAllUnits) {
-                    filterUnidadeSelect.innerHTML = '<option value="all">Todas</option>';
-                    unidades.forEach(unidade => {
-                        filterUnidadeSelect.innerHTML += `<option value="${unidade}">${unidade}</option>`;
-                    });
-                }
                 
                 generateReport();
             }, (error) => {
