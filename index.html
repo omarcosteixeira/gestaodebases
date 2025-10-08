@@ -138,6 +138,7 @@
             getDoc,
             setDoc,
             writeBatch,
+            where, // Import `where` for queries
             setLogLevel 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -433,12 +434,10 @@
         // --- 2. Listeners de Dados ---
         function setupDataListeners() {
             if (!db || !currentUser) return;
-            const leadsQuery = query(collection(db, LEADS_COLLECTION_PATH));
-            unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
-                leadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (currentView === 'dashboard' || currentView === 'historico') renderView(currentView);
-            }, (error) => console.error("Erro ao ouvir leads:", error));
-
+            
+            // FIX: Conditionally set up listeners based on user permissions.
+            
+            // Listener for Users (everyone needs this)
             const usersQuery = query(collection(db, USERS_COLLECTION_PATH));
             unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
                 usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -450,12 +449,34 @@
                 }
                 if (currentView === 'admin' || currentView === 'historico') renderView(currentView);
             }, (error) => console.error("Erro ao ouvir usuários:", error));
-            
-            const gapQuery = query(collection(db, GAP_COLLECTION_PATH));
-            unsubscribeGap = onSnapshot(gapQuery, (snapshot) => {
-                gapData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (currentView === 'gap') renderView('gap');
-            }, (error) => console.error("Erro ao ouvir GAP:", error));
+
+            // Listener for Leads
+            let leadsQuery;
+            if (canView('historico')) {
+                // Admins/QG/Sala de Matrícula can see all leads
+                leadsQuery = query(collection(db, LEADS_COLLECTION_PATH));
+            } else if(canView('cadastro')) {
+                // Promotors can only see their own leads
+                leadsQuery = query(collection(db, LEADS_COLLECTION_PATH), where("promotorId", "==", currentUser.uid));
+            }
+
+            if(leadsQuery) {
+                unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
+                    leadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if (currentView === 'dashboard' || currentView === 'historico' || currentView === 'cadastro') {
+                        renderView(currentView);
+                    }
+                }, (error) => console.error("Erro ao ouvir leads:", error));
+            }
+
+            // Listener for GAP Acadêmico
+            if (canView('gap')) {
+                const gapQuery = query(collection(db, GAP_COLLECTION_PATH));
+                unsubscribeGap = onSnapshot(gapQuery, (snapshot) => {
+                    gapData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if (currentView === 'gap') renderView('gap');
+                }, (error) => console.error("Erro ao ouvir GAP:", error));
+            }
         }
         
         // --- 3. Dashboard ---
@@ -1385,5 +1406,4 @@
     </script>
 </body>
 </html>
-
 
