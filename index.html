@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de bases Oeste</title>
+    <title>Gestão de Bases Oeste</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +14,10 @@
             background-color: #f3f4f6;
             color: #374151;
         }
+        /* Estilo para garantir que o input de data no iOS não tenha bordas estranhas */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: none;
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -22,7 +26,7 @@
         <!-- Tela de Autenticação -->
         <div id="auth-screen" class="flex flex-col items-center justify-center flex-1">
             <div class="bg-white p-8 rounded-xl shadow-xl w-full max-w-md">
-                <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Gestão de bases Oeste</h1>
+                <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Gestão de Bases Oeste</h1>
                 <div id="auth-form-container">
                     <form id="login-form" class="space-y-4">
                         <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
@@ -41,24 +45,24 @@
         <!-- Tela Principal da Ferramenta -->
         <div id="main-app" class="hidden flex-1 flex-col">
             <!-- Cabeçalho -->
-            <header class="bg-sky-600 text-white p-4 rounded-b-xl shadow-lg mb-8 flex justify-between items-center">
-                <h1 class="text-2xl font-bold">Gestão de bases Oeste</h1>
-                <div class="flex items-center space-x-4">
+            <header class="bg-sky-600 text-white p-4 rounded-b-xl shadow-lg mb-8 flex justify-between items-center flex-wrap gap-4">
+                <h1 class="text-2xl font-bold">Gestão de Bases Oeste</h1>
+                <div class="flex items-center space-x-4 flex-wrap gap-2">
                     <span id="user-info" class="font-semibold text-sm"></span>
-                    <button id="change-password-btn" class="bg-white text-sky-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition duration-300 shadow-sm">Mudar Senha</button>
-                    <button id="logout-button" class="bg-white text-sky-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition duration-300 shadow-sm">Sair</button>
+                    <button id="change-password-btn" class="bg-white text-sky-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition duration-300 shadow-sm text-sm">Mudar Senha</button>
+                    <button id="logout-button" class="bg-white text-sky-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition duration-300 shadow-sm text-sm">Sair</button>
                 </div>
             </header>
 
             <!-- Seções da Ferramenta -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1">
                 <!-- Seção de Cadastro -->
-                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg h-fit">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Cadastro de Base</h2>
                     <form id="base-form" class="space-y-4">
                         <div>
                             <label for="data" class="block text-sm font-medium text-gray-700">Data</label>
-                            <input type="date" id="data" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <input type="date" id="data" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
                         </div>
                         <div>
                             <label for="nomeBase" class="block text-sm font-medium text-gray-700">Nome da Base</label>
@@ -66,7 +70,8 @@
                         </div>
                         <div>
                             <label for="nomeAtendente" class="block text-sm font-medium text-gray-700">Nome do Atendente</label>
-                            <input type="text" id="nomeAtendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <!-- Este campo será preenchido automaticamente, mas pode ser alterado -->
+                            <input type="text" id="nomeAtendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
                         </div>
                         <div>
                             <label for="meioDisparo" class="block text-sm font-medium text-gray-700">Meio de Disparo</label>
@@ -79,15 +84,15 @@
                         </div>
                         <div>
                             <label for="quantidadeDisparos" class="block text-sm font-medium text-gray-700">Quantidade de Disparos</label>
-                            <input type="number" id="quantidadeDisparos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                            <input type="number" id="quantidadeDisparos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required min="0">
                         </div>
                         <div>
                             <label for="positivos" class="block text-sm font-medium text-gray-700">Quantidade de Positivos</label>
-                            <input type="number" id="positivos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                            <input type="number" id="positivos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required min="0">
                         </div>
                         <div>
                             <label for="negativos" class="block text-sm font-medium text-gray-700">Quantidade de Negativos</label>
-                            <input type="number" id="negativos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                            <input type="number" id="negativos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required min="0">
                         </div>
                         <div>
                             <label for="evidencia" class="block text-sm font-medium text-gray-700">Evidência (URL ou Observações)</label>
@@ -99,16 +104,17 @@
 
                 <!-- Seção de Relatórios -->
                 <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-gray-800">Relatórios</h2>
+                    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                        <h2 class="text-xl font-bold text-gray-800">Relatórios de Desempenho</h2>
                         <div id="report-controls" class="flex space-x-2">
-                            <button id="report-diario" class="px-3 py-1 text-sm rounded-full bg-sky-500 text-white font-semibold hover:bg-sky-600 transition">Diário</button>
-                            <button id="report-semanal" class="px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Semanal</button>
-                            <button id="report-anual" class="px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Anual</button>
+                            <!-- Botões de período podem ser adicionados aqui para facilitar a filtragem por data -->
+                            <button id="report-hoje" class="px-3 py-1 text-xs rounded-full bg-sky-500 text-white font-semibold hover:bg-sky-600 transition">Hoje</button>
+                            <button id="report-esta-semana" class="px-3 py-1 text-xs rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Esta Semana</button>
+                            <button id="report-este-mes" class="px-3 py-1 text-xs rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Este Mês</button>
                         </div>
                     </div>
                     
-                    <div id="report-filters" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div id="report-filters" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
                         <div>
                             <label for="filter-atendente" class="block text-sm font-medium text-gray-700">Atendente</label>
                             <select id="filter-atendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
@@ -139,30 +145,45 @@
                             <input type="date" id="filter-end-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
                         </div>
                     </div>
-                    <div id="report-summary" class="mt-6 p-4 bg-gray-100 rounded-xl">
-                        <h3 class="text-lg font-bold text-gray-800 mb-2">Resumo</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><span class="font-medium">Total de Disparos:</span> <span id="summary-disparos" class="font-bold">0</span></div>
-                            <div><span class="font-medium">Total de Positivos:</span> <span id="summary-positivos" class="font-bold">0</span></div>
-                            <div><span class="font-medium">Total de Negativos:</span> <span id="summary-negativos" class="font-bold">0</span></div>
+                    
+                    <div id="report-summary" class="mt-6 p-4 bg-gray-100 rounded-xl border border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Resumo do Período</h3>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div><span class="font-medium">Total de Disparos:</span> <span id="summary-disparos" class="font-bold text-sky-600">0</span></div>
+                            <div><span class="font-medium">Total de Positivos:</span> <span id="summary-positivos" class="font-bold text-green-600">0</span></div>
+                            <div><span class="font-medium">Total de Negativos:</span> <span id="summary-negativos" class="font-bold text-red-600">0</span></div>
+                            <div><span class="font-medium">Taxa de Conversão:</span> <span id="summary-conversao" class="font-bold text-purple-600">0.00%</span></div>
                         </div>
                     </div>
 
                     <!-- Botões de Exportação -->
                     <div class="mt-6 flex justify-end space-x-4">
-                        <button id="export-pdf-btn" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-semibold hover:bg-gray-600 transition duration-300 shadow-md">Exportar PDF</button>
-                        <button id="export-excel-btn" class="bg-green-500 text-white px-4 py-2 rounded-xl font-semibold hover:bg-green-600 transition duration-300 shadow-md">Exportar Excel</button>
+                        <button id="export-pdf-btn" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-semibold hover:bg-gray-600 transition duration-300 shadow-md flex items-center">
+                            <!-- Ícone PDF SVG -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a1 1 0 00-.293-.707l-4-4A1 1 0 0013 2H5zm2 5a1 1 0 011-1h2a1 1 0 110 2H8a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H8zm2 4a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                            </svg>
+                            Exportar PDF
+                        </button>
+                        <button id="export-excel-btn" class="bg-green-500 text-white px-4 py-2 rounded-xl font-semibold hover:bg-green-600 transition duration-300 shadow-md flex items-center">
+                            <!-- Ícone Excel SVG -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 4a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2H5zm10 2H5v1h10V6zm-9 3a1 1 0 011-1h5a1 1 0 110 2H7a1 1 0 01-1-1zm0 3a1 1 0 011-1h5a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            Exportar CSV
+                        </button>
                     </div>
                     
                     <!-- Tabela de Dados Brutos -->
                     <div class="mt-8 overflow-x-auto">
-                        <h3 class="text-lg font-bold text-gray-800 mb-2">Bases Cadastradas</h3>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Bases Cadastradas (Dados Brutos)</h3>
                         <table class="min-w-full bg-white border border-gray-200 rounded-xl">
                             <thead>
-                                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-xs leading-normal">
                                     <th class="py-3 px-6 text-left">Data</th>
                                     <th class="py-3 px-6 text-left">Base</th>
                                     <th class="py-3 px-6 text-left">Atendente</th>
+                                    <th class="py-3 px-6 text-left">Unidade</th>
                                     <th class="py-3 px-6 text-left">Meio</th>
                                     <th class="py-3 px-6 text-left">Disparos</th>
                                     <th class="py-3 px-6 text-left">Positivos</th>
@@ -180,16 +201,16 @@
 
             <!-- Seção de Administrador -->
             <div id="admin-panel" class="hidden mt-8 bg-white p-6 rounded-xl shadow-lg">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Painel do Administrador</h2>
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Painel do Administrador: Gerenciamento de Usuários</h2>
                 
                 <!-- Formulário para Criar Novo Usuário -->
-                <div class="mb-8">
-                    <h3 class="font-semibold text-gray-700 mb-2">Criar Novo Usuário</h3>
+                <div class="mb-8 p-4 border border-gray-200 rounded-xl bg-gray-50">
+                    <h3 class="font-semibold text-gray-700 mb-2">Criar Novo Usuário (Apenas usuários normais)</h3>
                     <form id="create-user-form" class="space-y-4">
-                        <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-xl">
-                        <input type="email" id="new-user-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl">
-                        <input type="password" id="new-user-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl">
-                        <input type="text" id="new-user-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-xl" required>
+                        <input type="email" id="new-user-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl" required>
+                        <input type="password" id="new-user-password" placeholder="Senha (mínimo 6 caracteres)" class="w-full p-3 border border-gray-300 rounded-xl" required minlength="6">
+                        <input type="text" id="new-user-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-xl" required>
                         <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-xl font-semibold hover:bg-green-700 transition shadow-md">Criar Usuário</button>
                     </form>
                 </div>
@@ -200,11 +221,11 @@
                     <div class="overflow-x-auto">
                         <table class="min-w-full bg-white border border-gray-200 rounded-xl">
                             <thead>
-                                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-xs leading-normal">
                                     <th class="py-3 px-6 text-left">Nome</th>
                                     <th class="py-3 px-6 text-left">E-mail</th>
                                     <th class="py-3 px-6 text-left">Unidade</th>
-                                    <th class="py-3 px-6 text-left">Permissão</th>
+                                    <th class="py-3 px-6 text-left">Acesso Total (Admin/Visão)</th>
                                     <th class="py-3 px-6 text-left">Ações</th>
                                 </tr>
                             </thead>
@@ -217,24 +238,24 @@
             </div>
         </div>
 
-        <!-- Pop-up de mensagens -->
-        <div id="message-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
-            <div class="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
-                <p id="message-text" class="text-center text-gray-800 mb-4"></p>
+        <!-- Pop-up de mensagens (Modal Genérico) -->
+        <div id="message-modal" class="hidden fixed inset-0 z-50 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all">
+                <p id="message-text" class="text-center text-gray-800 mb-4 font-medium"></p>
                 <div class="flex justify-center space-x-4">
-                    <button id="close-modal" class="bg-sky-600 text-white p-2 rounded-xl font-semibold hover:bg-sky-700 transition">OK</button>
-                    <button id="confirm-action" class="hidden bg-red-600 text-white p-2 rounded-xl font-semibold hover:bg-red-700 transition">Confirmar</button>
+                    <button id="close-modal" class="bg-sky-600 text-white p-2 rounded-xl font-semibold hover:bg-sky-700 transition w-20">OK</button>
+                    <button id="confirm-action" class="hidden bg-red-600 text-white p-2 rounded-xl font-semibold hover:bg-red-700 transition w-20">Confirmar</button>
                 </div>
             </div>
         </div>
 
         <!-- Modal para Mudar Senha -->
-        <div id="password-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
-            <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm">
+        <div id="password-modal" class="hidden fixed inset-0 z-50 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm transform transition-all">
                 <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Mudar Senha</h3>
                 <form id="change-password-form" class="space-y-4">
-                    <input type="password" id="new-password" placeholder="Nova Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
-                    <input type="password" id="confirm-new-password" placeholder="Confirme a Nova Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="password" id="new-password" placeholder="Nova Senha (mínimo 6 caracteres)" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required minlength="6">
+                    <input type="password" id="confirm-new-password" placeholder="Confirme a Nova Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required minlength="6">
                     <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Mudar Senha</button>
                 </form>
                 <div class="flex justify-center mt-4">
@@ -247,35 +268,29 @@
 
     <!-- Rodapé -->
     <footer class="text-center text-gray-500 text-xs p-4">
-        Sistema Projetado por Marcos Rodrigo Teixeira
+        Sistema Gestão de Bases Oeste | Desenvolvido com Firebase e Tailwind CSS
     </footer>
 
-    <!-- Firebase e jsPDF -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <!-- Bibliotecas de terceiros (jsPDF deve ser carregado antes do autotable plugin) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
     <script type="module">
-        // Importações necessárias para a versão modular do Firebase
+        // Importações modulares do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, onSnapshot, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Variáveis globais fornecidas pelo ambiente
+        // --- Configuração e Inicialização do Firebase ---
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyBo6SZLEEXvIM6tbRjn-Zza-IrA2uCJ_p0",
-            authDomain: "gestaodebasesoeste-b8648.firebaseapp.com",
-            projectId: "gestaodebasesoeste-b8648",
-            storageBucket: "gestaodebasesoeste-b8648.firebasestorage.app",
-            messagingSenderId: "475439316770",
-            appId: "1:475439316770:web:15a56cc5a92f6d9f9d2f7b"
+            // Configuração de fallback segura. A chave API real será fornecida pelo ambiente.
+            apiKey: "", 
+            authDomain: `${appId}.firebaseapp.com`,
+            projectId: appId,
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Inicializa o Firebase
         let app, db, auth;
         try {
             app = initializeApp(firebaseConfig);
@@ -283,7 +298,7 @@
             auth = getAuth(app);
         } catch (e) {
             console.error("Erro ao inicializar o Firebase:", e);
-            showMessage('Erro ao inicializar o Firebase. Verifique a configuração.');
+            // Uso de `showMessage` garantido após a definição
         }
 
         let currentUserId = null;
@@ -293,7 +308,7 @@
         let allBasesData = [];
         let currentDeleteDocId = null;
 
-        // Referências aos elementos do DOM
+        // --- Referências ao DOM ---
         const authScreen = document.getElementById('auth-screen');
         const mainApp = document.getElementById('main-app');
         const loginForm = document.getElementById('login-form');
@@ -306,12 +321,12 @@
         const logoutButton = document.getElementById('logout-button');
         const changePasswordBtn = document.getElementById('change-password-btn');
         const basesTableBody = document.getElementById('bases-table-body');
-        const reportDiarioBtn = document.getElementById('report-diario');
-        const reportSemanalBtn = document.getElementById('report-semanal');
-        const reportAnualBtn = document.getElementById('report-anual');
+        const reportHojeBtn = document.getElementById('report-hoje');
+        const reportEstaSemanaBtn = document.getElementById('report-esta-semana');
+        const reportEsteMesBtn = document.getElementById('report-este-mes');
         const filterAtendenteSelect = document.getElementById('filter-atendente');
+        const filterMeioSelect = document.getElementById('filter-meio');
         const filterUnidadeSelect = document.getElementById('filter-unidade');
-        const noDataMessage = document.getElementById('no-data-message');
         const filterStartDateInput = document.getElementById('filter-start-date');
         const filterEndDateInput = document.getElementById('filter-end-date');
         const messageModal = document.getElementById('message-modal');
@@ -326,6 +341,60 @@
         const changePasswordForm = document.getElementById('change-password-form');
         const closePasswordModalBtn = document.getElementById('close-password-modal');
 
+        // --- Funções Auxiliares ---
+
+        // Função para formatar a data (YYYY-MM-DD)
+        function formatDate(date) {
+            const d = new Date(date);
+            let month = '' + (d.getMonth() + 1);
+            let day = '' + d.getDate();
+            const year = d.getFullYear();
+
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+
+            return [year, month, day].join('-');
+        }
+        
+        // Função para obter o início e o fim da semana
+        function getWeekRange() {
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0 (Domingo) a 6 (Sábado)
+            
+            // Início da semana (Domingo)
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() - dayOfWeek);
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            // Fim da semana (Sábado)
+            const endOfWeek = new Date(now);
+            endOfWeek.setDate(now.getDate() + (6 - dayOfWeek));
+            endOfWeek.setHours(23, 59, 59, 999);
+            
+            return {
+                start: formatDate(startOfWeek),
+                end: formatDate(endOfWeek)
+            };
+        }
+
+        // Função para obter o início e o fim do mês
+        function getMonthRange() {
+            const now = new Date();
+            
+            // Início do mês (Dia 1)
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            startOfMonth.setHours(0, 0, 0, 0);
+
+            // Fim do mês (Último dia)
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            endOfMonth.setHours(23, 59, 59, 999);
+
+            return {
+                start: formatDate(startOfMonth),
+                end: formatDate(endOfMonth)
+            };
+        }
+
         // Função para mostrar mensagens em um modal
         function showMessage(message, isConfirmation = false, onConfirm = null) {
             messageText.textContent = message;
@@ -339,9 +408,12 @@
                 confirmActionBtn.classList.add('hidden');
             }
         }
+        
         closeModalBtn.addEventListener('click', () => {
             messageModal.classList.add('hidden');
         });
+
+        // --- Lógica de Autenticação e Usuário ---
 
         // Alterna entre login e cadastro
         document.getElementById('show-register').addEventListener('click', (e) => {
@@ -350,7 +422,7 @@
                 <form id="register-form" class="space-y-4">
                     <input type="text" id="register-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
                     <input type="email" id="register-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
-                    <input type="password" id="register-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="password" id="register-password" placeholder="Senha (mínimo 6 caracteres)" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required minlength="6">
                     <input type="text" id="register-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
                     <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Cadastrar</button>
                 </form>
@@ -364,20 +436,7 @@
             document.getElementById('register-form').addEventListener('submit', handleRegister);
             document.getElementById('show-login').addEventListener('click', (e) => {
                 e.preventDefault();
-                registerFormContainer.innerHTML = `
-                    <form id="login-form" class="space-y-4">
-                        <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
-                        <input type="password" id="login-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
-                        <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Entrar</button>
-                    </form>
-                    <div class="mt-4 text-center">
-                        <p class="text-sm text-gray-600">
-                            Não tem uma conta? <a href="#" id="show-register" class="text-sky-600 hover:underline">Cadastre-se</a>
-                        </p>
-                    </div>
-                </div>
-            `;
-                document.getElementById('login-form').addEventListener('submit', handleLogin);
+                location.reload(); // Recarrega para voltar à tela de login original
             });
         });
 
@@ -403,6 +462,7 @@
             const unidade = document.getElementById('register-unidade').value;
 
             try {
+                // Checa se já existe um admin para o app.
                 const adminDoc = await getDoc(doc(db, "app_state", "admin"));
                 let isFirstUser = !adminDoc.exists();
 
@@ -410,7 +470,7 @@
                 const user = userCredential.user;
 
                 const userRole = isFirstUser ? 'admin' : 'user';
-                const userUnidade = isFirstUser ? 'Oeste' : unidade;
+                const userUnidade = unidade;
                 const canViewAllUnits = isFirstUser;
 
                 await setDoc(doc(db, "users", user.uid), {
@@ -425,7 +485,8 @@
                     await setDoc(doc(db, "app_state", "admin"), { adminId: user.uid });
                 }
                 
-                showMessage(`Usuário ${name} cadastrado com sucesso!`);
+                showMessage(`Usuário ${name} cadastrado com sucesso! Faça login para continuar.`);
+                location.reload(); // Recarrega para forçar o login
             } catch (error) {
                 showMessage(`Erro ao cadastrar: ${error.message}`);
             }
@@ -439,7 +500,14 @@
             const password = document.getElementById('new-user-password').value;
             const unidade = document.getElementById('new-user-unidade').value;
             
+            if (password.length < 6) {
+                 showMessage("A senha deve ter no mínimo 6 caracteres.");
+                 return;
+            }
+
             try {
+                // Cria o usuário na Autenticação (funciona apenas com a API Key de Admin/Service Account)
+                // Nota: O Firebase Client SDK permite a criação pelo Admin, mas não a exclusão.
                 const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await setDoc(doc(db, "users", newUserCredential.user.uid), {
                     name, email, unidade, role: 'user', canViewAllUnits: false
@@ -482,28 +550,29 @@
                 passwordModal.classList.add('hidden');
                 changePasswordForm.reset();
             } catch (error) {
-                showMessage(`Erro ao mudar a senha: ${error.message}`);
+                showMessage(`Erro ao mudar a senha: ${error.message}. Tente fazer login novamente se o erro persistir.`);
             }
         });
         
         // Lidar com o estado de autenticação
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
+            if (user && db) {
                 currentUserId = user.uid;
                 authScreen.classList.add('hidden');
                 mainApp.classList.remove('hidden');
 
                 const userDocRef = doc(db, "users", user.uid);
                 const userDoc = await getDoc(userDocRef);
+                
                 if (userDoc.exists()) {
                     const userData = userDoc.data();
                     currentUserRole = userData.role;
                     currentUserUnit = userData.unidade;
-                    // Correção: Garante que admins sempre podem ver todas as bases
                     currentUserCanViewAllUnits = userData.canViewAllUnits || (currentUserRole === 'admin');
                     
-                    userInfoSpan.textContent = `${userData.name} (${userData.unidade})`;
-                    nomeAtendenteInput.value = userData.name;
+                    userInfoSpan.textContent = `${userData.name} (${userData.unidade}) - ID: ${user.uid}`;
+                    document.getElementById('nomeAtendente').value = userData.name || '';
+                    document.getElementById('data').value = formatDate(new Date());
 
                     if (currentUserRole === 'admin') {
                         adminPanel.classList.remove('hidden');
@@ -515,8 +584,10 @@
                     }
                     
                     setupDataListener();
+                } else {
+                    // Se o documento do usuário não existir (apenas Auth), força o logout
+                    await signOut(auth);
                 }
-
             } else {
                 currentUserId = null;
                 currentUserRole = null;
@@ -524,10 +595,11 @@
                 currentUserCanViewAllUnits = false;
                 authScreen.classList.remove('hidden');
                 mainApp.classList.add('hidden');
-                
                 basesTableBody.innerHTML = '';
             }
         });
+
+        // --- Gerenciamento de Dados (Firestore) ---
 
         // Configura o listener para a coleção de usuários no painel do admin
         function setupUsersListener() {
@@ -535,8 +607,11 @@
 
             onSnapshot(collection(db, "users"), (snapshot) => {
                 const usersData = [];
+                const allUnits = new Set();
                 snapshot.forEach(doc => {
-                    usersData.push({ ...doc.data(), id: doc.id });
+                    const user = { ...doc.data(), id: doc.id };
+                    usersData.push(user);
+                    allUnits.add(user.unidade);
                 });
                 renderUsersTable(usersData);
             });
@@ -547,16 +622,23 @@
             usersTableBody.innerHTML = '';
             users.forEach(user => {
                 const isCurrentUser = user.id === currentUserId;
+                const isAdmin = user.role === 'admin';
+                // Adiciona a unidade à coluna, visível apenas para admins (que já estão no painel)
+                const isUnitViewer = user.canViewAllUnits && !isAdmin; 
+                
+                const permissionText = isAdmin ? 'Admin' : (isUnitViewer ? 'Visão Unidades' : 'Usuário');
+
                 const row = `
                     <tr class="border-b border-gray-200">
                         <td class="py-3 px-6 text-left">${user.name}</td>
                         <td class="py-3 px-6 text-left">${user.email}</td>
                         <td class="py-3 px-6 text-left">${user.unidade}</td>
                         <td class="py-3 px-6 text-center">
-                            <input type="checkbox" data-user-id="${user.id}" class="form-checkbox h-4 w-4 text-sky-600 rounded" ${user.canViewAllUnits ? 'checked' : ''} ${isCurrentUser || user.role === 'admin' ? 'disabled' : ''}>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${isAdmin ? 'bg-purple-100 text-purple-800' : (isUnitViewer ? 'bg-sky-100 text-sky-800' : 'bg-gray-100 text-gray-800')}">${permissionText}</span>
+                            ${!isAdmin && !isCurrentUser ? `<input type="checkbox" data-user-id="${user.id}" class="ml-2 form-checkbox h-4 w-4 text-sky-600 rounded" ${isUnitViewer ? 'checked' : ''}>` : ''}
                         </td>
                         <td class="py-3 px-6 text-center">
-                            <button onclick="deleteUser('${user.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-xl font-semibold hover:bg-red-600 transition shadow-sm ${isCurrentUser || user.role === 'admin' ? 'opacity-50 cursor-not-allowed' : ''}" ${isCurrentUser || user.role === 'admin' ? 'disabled' : ''}>Excluir</button>
+                            <button onclick="deleteUser('${user.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-xl font-semibold hover:bg-red-600 transition shadow-sm ${isCurrentUser || isAdmin ? 'opacity-50 cursor-not-allowed' : ''}" ${isCurrentUser || isAdmin ? 'disabled' : ''}>Excluir Doc</button>
                         </td>
                     </tr>
                 `;
@@ -576,44 +658,55 @@
         async function updateUserPermission(userId, canViewAllUnits) {
             try {
                 await updateDoc(doc(db, "users", userId), { canViewAllUnits: canViewAllUnits });
-                showMessage('Permissão atualizada com sucesso.');
+                showMessage(`Permissão de visão de unidades atualizada para o usuário ${userId}.`);
             } catch (error) {
                 showMessage(`Erro ao atualizar a permissão: ${error.message}`);
             }
         }
         
-        // Exclui um usuário
+        // Exclui um usuário (apenas o documento do Firestore)
         window.deleteUser = function(userId) {
-            showMessage('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.', true, async () => {
+            if (userId === currentUserId) return; // Não permite excluir a si mesmo
+            
+            showMessage('Tem certeza que deseja excluir o DOCUMENTO (Registro) deste usuário? \nATENÇÃO: Isso não exclui a conta de login (Auth). A exclusão total requer um serviço de backend (Cloud Function).', true, async () => {
                 try {
                     await deleteDoc(doc(db, "users", userId));
-                    showMessage('Usuário excluído com sucesso!');
+                    showMessage('Documento de usuário excluído com sucesso!');
+                    console.warn(`O documento Firestore do usuário ${userId} foi removido, mas a conta Firebase Authentication permanece. Para exclusão total, utilize o console do Firebase ou Cloud Functions.`);
                 } catch (error) {
-                    showMessage(`Erro ao excluir o usuário: ${error.message}`);
+                    showMessage(`Erro ao excluir o documento do usuário: ${error.message}`);
                 } finally {
                     messageModal.classList.add('hidden');
                 }
             });
         };
 
-        // Função para configurar o listener de dados do Firestore
+        // Função para configurar o listener de dados do Firestore para as bases
         async function setupDataListener() {
             let basesRef = collection(db, "bases");
             let q;
-
-            // Para admins, buscamos todas as unidades antes de filtrar os dados
+            let allUnits = new Set();
+            
+            // 1. Coleta todas as unidades e atendentes (necessário para filtros)
+            const usersSnapshot = await getDocs(collection(db, "users"));
+            const allAtendentes = new Set();
+            usersSnapshot.forEach(doc => {
+                const userData = doc.data();
+                allUnits.add(userData.unidade);
+                allAtendentes.add(userData.name);
+            });
+            
+            // Preenche o seletor de unidades (apenas visível para quem tem permissão)
             if (currentUserRole === 'admin' || currentUserCanViewAllUnits) {
-                const usersSnapshot = await getDocs(collection(db, "users"));
-                const allUnits = new Set();
-                usersSnapshot.forEach(doc => {
-                    allUnits.add(doc.data().unidade);
-                });
-
                 filterUnidadeSelect.innerHTML = '<option value="all">Todas</option>';
                 allUnits.forEach(unidade => {
                     filterUnidadeSelect.innerHTML += `<option value="${unidade}">${unidade}</option>`;
                 });
-                
+            }
+
+            // 2. Define a query de dados
+            if (currentUserRole === 'admin' || currentUserCanViewAllUnits) {
+                // Admins ou usuários com visão total: sem filtro de unidade na query
                 q = query(basesRef);
             } else {
                 // Usuário normal: consulta apenas as bases da sua unidade
@@ -623,22 +716,31 @@
             // Adiciona listener para a coleção de bases
             onSnapshot(q, (snapshot) => {
                 allBasesData = [];
-                const atendentes = new Set();
+                // Reconstroi o set de atendentes do *documento* users, não dos dados de base.
+                // Mas, para o filtro, precisamos dos atendentes que *têm* bases.
+                const atendentesComDados = new Set();
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     allBasesData.push({ ...data, id: doc.id });
-                    atendentes.add(data.nomeAtendente);
+                    atendentesComDados.add(data.nomeAtendente);
                 });
 
-                // Preenche o seletor de atendentes com os nomes encontrados
+                // Preenche o seletor de atendentes
                 filterAtendenteSelect.innerHTML = '<option value="all">Todos</option>';
-                atendentes.forEach(atendente => {
+                // Usa o nome do atendente logado primeiro, se existir
+                if (nomeAtendenteInput.value && !atendentesComDados.has(nomeAtendenteInput.value)) {
+                    atendentesComDados.add(nomeAtendenteInput.value);
+                }
+                
+                // Ordena os atendentes e preenche o filtro
+                Array.from(atendentesComDados).sort().forEach(atendente => {
                     filterAtendenteSelect.innerHTML += `<option value="${atendente}">${atendente}</option>`;
                 });
                 
                 generateReport();
             }, (error) => {
                 console.error("Erro ao carregar dados:", error);
+                showMessage("Erro ao carregar bases do Firestore. Verifique as regras de segurança.");
             });
         }
 
@@ -646,14 +748,16 @@
         function renderBasesTable(data) {
             basesTableBody.innerHTML = '';
             if (data.length === 0) {
-                basesTableBody.innerHTML = `<tr><td colspan="8" class="text-center py-4">Nenhum dado encontrado para esta seleção.</td></tr>`;
+                basesTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-gray-500">Nenhum dado encontrado para esta seleção.</td></tr>`;
             } else {
+                data.sort((a, b) => new Date(b.data) - new Date(a.data)); // Ordena por data mais recente
                 data.forEach((item) => {
                     const row = `
                         <tr class="border-b border-gray-200 hover:bg-gray-100">
                             <td class="py-3 px-6 text-left whitespace-nowrap">${item.data}</td>
                             <td class="py-3 px-6 text-left">${item.nomeBase}</td>
                             <td class="py-3 px-6 text-left">${item.nomeAtendente}</td>
+                            <td class="py-3 px-6 text-left">${item.unidade}</td>
                             <td class="py-3 px-6 text-left">${item.meioDisparo}</td>
                             <td class="py-3 px-6 text-left">${item.quantidadeDisparos}</td>
                             <td class="py-3 px-6 text-left">${item.positivos}</td>
@@ -687,21 +791,33 @@
         baseForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
+                const disparos = parseInt(document.getElementById('quantidadeDisparos').value);
+                const positivos = parseInt(document.getElementById('positivos').value);
+                const negativos = parseInt(document.getElementById('negativos').value);
+
+                if (positivos + negativos > disparos) {
+                    showMessage('A soma de Positivos e Negativos não pode ser maior que a Quantidade de Disparos.');
+                    return;
+                }
+
                 const data = {
                     data: document.getElementById('data').value,
                     nomeBase: document.getElementById('nomeBase').value,
                     nomeAtendente: nomeAtendenteInput.value,
                     meioDisparo: document.getElementById('meioDisparo').value,
-                    quantidadeDisparos: parseInt(document.getElementById('quantidadeDisparos').value),
-                    positivos: parseInt(document.getElementById('positivos').value),
-                    negativos: parseInt(document.getElementById('negativos').value),
+                    quantidadeDisparos: disparos,
+                    positivos: positivos,
+                    negativos: negativos,
                     evidencia: document.getElementById('evidencia').value || "",
                     userId: currentUserId,
                     unidade: currentUserUnit,
+                    createdAt: new Date().toISOString() // Adiciona timestamp
                 };
                 await addDoc(collection(db, "bases"), data);
                 showMessage('Dados salvos com sucesso!');
                 baseForm.reset();
+                document.getElementById('nomeAtendente').value = nomeAtendenteInput.value; // Mantém o nome preenchido
+                document.getElementById('data').value = formatDate(new Date());
             } catch (error) {
                 showMessage(`Erro ao salvar dados: ${error.message}`);
             }
@@ -716,18 +832,54 @@
             }
         });
 
-        // Lógica de geração de relatórios
-        reportDiarioBtn.addEventListener('click', () => { generateReport(); });
-        reportSemanalBtn.addEventListener('click', () => { generateReport(); });
-        reportAnualBtn.addEventListener('click', () => { generateReport(); });
-        filterAtendenteSelect.addEventListener('change', () => { generateReport(); });
-        document.getElementById('filter-meio').addEventListener('change', () => { generateReport(); });
-        if (filterUnidadeSelect) {
-            filterUnidadeSelect.addEventListener('change', () => { generateReport(); });
-        }
-        filterStartDateInput.addEventListener('change', () => { generateReport(); });
-        filterEndDateInput.addEventListener('change', () => { generateReport(); });
+        // --- Lógica de Relatórios e Filtros ---
 
+        // Configura o botão de filtro de período
+        function setActiveReportButton(activeId) {
+            [reportHojeBtn, reportEstaSemanaBtn, reportEsteMesBtn].forEach(btn => {
+                if (btn.id === activeId) {
+                    btn.classList.replace('bg-gray-200', 'bg-sky-500');
+                    btn.classList.replace('text-gray-700', 'text-white');
+                } else {
+                    btn.classList.replace('bg-sky-500', 'bg-gray-200');
+                    btn.classList.replace('text-white', 'text-gray-700');
+                }
+            });
+        }
+
+        reportHojeBtn.addEventListener('click', () => { 
+            const today = formatDate(new Date());
+            filterStartDateInput.value = today;
+            filterEndDateInput.value = today;
+            setActiveReportButton('report-hoje');
+            generateReport(); 
+        });
+        reportEstaSemanaBtn.addEventListener('click', () => { 
+            const range = getWeekRange();
+            filterStartDateInput.value = range.start;
+            filterEndDateInput.value = range.end;
+            setActiveReportButton('report-esta-semana');
+            generateReport(); 
+        });
+        reportEsteMesBtn.addEventListener('click', () => { 
+            const range = getMonthRange();
+            filterStartDateInput.value = range.start;
+            filterEndDateInput.value = range.end;
+            setActiveReportButton('report-este-mes');
+            generateReport(); 
+        });
+
+        // Event listeners para filtros de seleção e data
+        filterAtendenteSelect.addEventListener('change', generateReport);
+        filterMeioSelect.addEventListener('change', generateReport);
+        if (filterUnidadeSelect) {
+            filterUnidadeSelect.addEventListener('change', generateReport);
+        }
+        filterStartDateInput.addEventListener('change', generateReport);
+        filterEndDateInput.addEventListener('change', generateReport);
+
+
+        // Função principal para filtrar e gerar o relatório
         function generateReport() {
             const filteredData = filterData();
             
@@ -741,9 +893,12 @@
                 totalNegativos += item.negativos;
             });
             
+            const taxaConversao = totalDisparos > 0 ? ((totalPositivos / totalDisparos) * 100).toFixed(2) : '0.00';
+            
             document.getElementById('summary-disparos').textContent = totalDisparos;
             document.getElementById('summary-positivos').textContent = totalPositivos;
             document.getElementById('summary-negativos').textContent = totalNegativos;
+            document.getElementById('summary-conversao').textContent = `${taxaConversao}%`;
             
             renderBasesTable(filteredData);
         }
@@ -751,8 +906,9 @@
         function filterData() {
             let data = [...allBasesData];
             const atendente = filterAtendenteSelect.value;
-            const meio = document.getElementById('filter-meio').value;
-            const unidade = filterUnidadeSelect ? filterUnidadeSelect.value : currentUserUnit;
+            const meio = filterMeioSelect.value;
+            // A unidade só é usada no filtro se o usuário puder ver todas as unidades.
+            const unidade = (currentUserRole === 'admin' || currentUserCanViewAllUnits) && filterUnidadeSelect ? filterUnidadeSelect.value : currentUserUnit;
             const startDate = filterStartDateInput.value;
             const endDate = filterEndDateInput.value;
 
@@ -762,44 +918,67 @@
             if (meio !== 'all') {
                 data = data.filter(base => base.meioDisparo === meio);
             }
+            // Filtro por unidade
             if (unidade !== 'all') {
-                data = data.filter(base => base.unidade === unidade);
+                 data = data.filter(base => base.unidade === unidade);
             }
+            
+            // Filtros de data (incluindo o dia da data final)
             if (startDate) {
                 data = data.filter(base => base.data >= startDate);
             }
             if (endDate) {
                 data = data.filter(base => base.data <= endDate);
             }
+            
             return data;
         }
 
-        // Lógica de exportação para PDF e Excel
+        // --- Lógica de Exportação ---
+        
+        // Exportação para PDF
         exportPdfBtn.addEventListener('click', async () => {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'pt', 'a4');
-            const margin = 20;
-            const basesTable = document.getElementById('bases-table-body');
-            let y = margin;
+            if (typeof jsPDF === 'undefined' || typeof doc.autoTable === 'undefined') {
+                showMessage('Erro: Bibliotecas de PDF não carregadas corretamente.');
+                return;
+            }
 
+            const doc = new jsPDF('p', 'pt', 'a4');
+            const margin = 40;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const filteredData = filterData();
+            
+            if (filteredData.length === 0) {
+                 showMessage('Não há dados filtrados para exportar para PDF.');
+                 return;
+            }
+            
             // Título do relatório
             doc.setFontSize(18);
-            doc.text("Relatório de Bases", margin, y);
-            y += 20;
+            doc.text("Relatório de Gestão de Bases", pageWidth / 2, margin, { align: 'center' });
 
-            // Adiciona o resumo do relatório
-            doc.setFontSize(14);
-            doc.text("Resumo:", margin, y);
-            y += 15;
-            const summaryText = document.getElementById('report-summary').innerText;
+            let y = margin + 30;
+
+            // Adiciona o resumo
             doc.setFontSize(10);
-            const summaryLines = doc.splitTextToSize(summaryText, 550);
+            const summaryText = document.getElementById('report-summary').innerText.replace(/\sTaxa de Conversão:/g, '\nTaxa de Conversão:'); // Quebra de linha para melhor formatação
+            const summaryLines = doc.splitTextToSize(summaryText, 520);
             doc.text(summaryLines, margin, y);
             y += doc.getTextDimensions(summaryLines).h + 20;
 
             // Adiciona a tabela
-            const headers = [['Data', 'Base', 'Atendente', 'Meio', 'Disparos', 'Positivos', 'Negativos']];
-            const data = Array.from(basesTable.rows).map(row => Array.from(row.cells).slice(0, 7).map(cell => cell.innerText));
+            const headers = [['Data', 'Base', 'Atendente', 'Unidade', 'Meio', 'Disparos', 'Positivos', 'Negativos']];
+            const data = filteredData.map(item => [
+                item.data,
+                item.nomeBase,
+                item.nomeAtendente,
+                item.unidade,
+                item.meioDisparo,
+                item.quantidadeDisparos,
+                item.positivos,
+                item.negativos
+            ]);
             
             doc.autoTable({
                 head: headers,
@@ -807,13 +986,22 @@
                 startY: y,
                 theme: 'striped',
                 headStyles: { fillColor: [59, 130, 246] },
-                margin: { top: margin, bottom: margin, left: margin, right: margin }
+                margin: { top: margin, bottom: margin, left: margin, right: margin },
+                styles: { fontSize: 8 },
+                columnStyles: { 
+                    0: { cellWidth: 50 }, 
+                    4: { cellWidth: 50 }, 
+                    5: { cellWidth: 50 },
+                    6: { cellWidth: 50 },
+                    7: { cellWidth: 50 },
+                }
             });
 
             doc.save("Relatorio_de_Bases.pdf");
             showMessage('Relatório em PDF gerado com sucesso!');
         });
 
+        // Exportação para Excel (CSV)
         exportExcelBtn.addEventListener('click', () => {
             const data = filterData();
             if (data.length === 0) {
@@ -821,29 +1009,36 @@
                 return;
             }
 
-            const header = ["Data", "Nome da Base", "Nome do Atendente", "Meio de Disparo", "Quantidade de Disparos", "Positivos", "Negativos", "Evidência"];
+            const header = ["Data", "Nome da Base", "Nome do Atendente", "Unidade", "Meio de Disparo", "Quantidade de Disparos", "Positivos", "Negativos", "Evidência"];
             const rows = data.map(item => [
                 item.data,
                 item.nomeBase,
                 item.nomeAtendente,
+                item.unidade,
                 item.meioDisparo,
                 item.quantidadeDisparos,
                 item.positivos,
                 item.negativos,
-                item.evidencia
+                // Garantir que a evidência não cause problemas no CSV
+                `"${item.evidencia.replace(/"/g, '""')}"`
             ]);
 
-            let csvContent = "data:text/csv;charset=utf-8," + header.join(";") + "\n" + rows.map(row => row.join(";")).join("\n");
+            // Formatação CSV com separador de ponto e vírgula
+            let csvContent = "\ufeff" + header.join(";") + "\n" + rows.map(row => row.join(";")).join("\n");
             
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", "data:text/csv;charset=utf-8," + encodedUri);
             link.setAttribute("download", "relatorio_bases.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             showMessage('Relatório em Excel (CSV) gerado com sucesso!');
         });
+        
+        // Configuração inicial do filtro de data para 'Hoje'
+        reportHojeBtn.click();
+
     </script>
 </body>
 </html>
