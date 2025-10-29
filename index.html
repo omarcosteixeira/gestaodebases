@@ -3,1407 +3,847 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Leads Angra</title>
-    <!-- Cache Control Tags -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <!-- Tailwind CSS CDN para estilos responsivos e modernos -->
+    <title>Gestão de bases Oeste</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS (xlsx) CDN para manipulação de arquivos Excel -->
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://css.gg/css?=|check|close|user|upload|search|tag|phone|mail|list|calendar|hash|briefcase" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Estilos globais para a fonte e transições */
-        body { font-family: 'Inter', sans-serif; }
-        .transition-all { transition: all 0.3s ease-in-out; }
-        /* Animação para resultados da importação */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
-        /* Estilo para botões de toggle de documento */
-        .doc-toggle {
-            padding: 0.25rem 0.5rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 1px solid transparent;
-            min-width: 50px;
-            text-align: center;
-        }
-        .doc-toggle.doc-sim {
-            background-color: #10B981; /* green-500 */
-            color: white;
-            border-color: #059669; /* green-600 */
-        }
-        .doc-toggle.doc-nao {
-            background-color: #FEE2E2; /* red-100 */
-            color: #B91C1C; /* red-700 */
-            border-color: #FCA5A5; /* red-300 */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #374151;
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-
-    <!-- Container Principal do App -->
-    <div id="app-container" class="hidden">
-        
-        <!-- Cabeçalho e Navegação -->
-        <header class="bg-blue-800 text-white shadow-lg sticky top-0 z-10">
-            <div class="max-w-7xl mx-auto p-4 flex flex-col md:flex-row justify-between items-center">
-                <h1 class="text-2xl font-bold tracking-tight mb-2 md:mb-0 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="inline-block mr-2 h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="18" x2="12" y2="22"/></svg>
-                    Gestão de Leads Angra
-                </h1>
-                <nav id="main-nav" class="flex space-x-2 sm:space-x-4">
-                    <!-- Nav items will be dynamically injected here based on user role -->
-                </nav>
-                <div class="flex items-center space-x-4 mt-2 md:mt-0">
-                    <div id="user-info-display" class="text-sm p-2 bg-blue-700 rounded-lg text-blue-200 shadow-inner hidden lg:block">
-                        <!-- O nome e perfil do usuário serão injetados aqui -->
+<body class="flex flex-col min-h-screen">
+    <!-- Container principal com largura limitada para melhor visualização em telas grandes -->
+    <div id="app" class="flex flex-1 flex-col p-4 md:p-8 mx-auto w-full max-w-screen-xl">
+        <!-- Tela de Autenticação -->
+        <div id="auth-screen" class="flex flex-col items-center justify-center flex-1">
+            <div class="bg-white p-8 rounded-xl shadow-xl w-full max-w-md">
+                <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Gestão de bases Oeste</h1>
+                <div id="auth-form-container">
+                    <form id="login-form" class="space-y-4">
+                        <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="password" id="login-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Entrar</button>
+                    </form>
+                    <div class="mt-4 text-center">
+                        <p class="text-sm text-gray-600">
+                            Não tem uma conta? <a href="#" id="show-register" class="text-sky-600 hover:underline">Cadastre-se</a>
+                        </p>
                     </div>
-                    <button id="btn-logout" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md transition-all text-sm flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                        Sair
-                    </button>
                 </div>
             </div>
-        </header>
-
-        <!-- Conteúdo Principal -->
-        <main class="flex-grow p-4 md:p-8">
-            <div class="max-w-7xl mx-auto">
-                <div id="view-dashboard" class="view-content space-y-8 hidden"></div>
-                <div id="view-cadastro" class="view-content space-y-8 hidden"></div>
-                <div id="view-historico" class="view-content space-y-8 hidden"></div>
-                <div id="view-gap" class="view-content space-y-8 hidden"></div>
-                <div id="view-admin" class="view-content space-y-8 hidden"></div>
-            </div>
-        </main>
-
-        <!-- Rodapé -->
-        <footer class="bg-gray-900 text-white p-4 mt-8">
-            <div id="footer-content" class="max-w-7xl mx-auto text-center text-sm text-gray-400">
-                Sistema de Gestão de Leads Angra
-            </div>
-        </footer>
-    </div>
-    
-    <!-- Tela de Carregamento Inicial -->
-    <div id="loading-screen" class="flex justify-center items-center h-screen bg-gray-100 p-4">
-        <div class="text-center">
-            <svg class="animate-spin h-10 w-10 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p class="mt-4 text-gray-600 font-semibold">Conectando ao sistema...</p>
         </div>
-    </div>
-    
-    <!-- Tela de Autenticação (Login/Cadastro) -->
-    <div id="auth-screen" class="hidden flex justify-center items-center h-screen bg-gray-100 p-4">
-        <div id="auth-card" class="w-full max-w-md bg-white p-8 rounded-xl shadow-2xl border border-gray-200">
-            <!-- Conteúdo da autenticação será injetado aqui -->
+
+        <!-- Tela Principal da Ferramenta -->
+        <div id="main-app" class="hidden flex-1 flex-col">
+            <!-- Cabeçalho -->
+            <header class="bg-sky-600 text-white p-4 rounded-b-xl shadow-lg mb-8 flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Gestão de bases Oeste</h1>
+                <div class="flex items-center space-x-4">
+                    <span id="user-info" class="font-semibold text-sm"></span>
+                    <button id="change-password-btn" class="bg-white text-sky-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition duration-300 shadow-sm">Mudar Senha</button>
+                    <button id="logout-button" class="bg-white text-sky-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition duration-300 shadow-sm">Sair</button>
+                </div>
+            </header>
+
+            <!-- Seções da Ferramenta -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1">
+                <!-- Seção de Cadastro -->
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Cadastro de Base</h2>
+                    <form id="base-form" class="space-y-4">
+                        <div>
+                            <label for="data" class="block text-sm font-medium text-gray-700">Data</label>
+                            <input type="date" id="data" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label for="nomeBase" class="block text-sm font-medium text-gray-700">Nome da Base</label>
+                            <input type="text" id="nomeBase" placeholder="Ex: Campanha Verão" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                        </div>
+                        <div>
+                            <label for="nomeAtendente" class="block text-sm font-medium text-gray-700">Nome do Atendente</label>
+                            <input type="text" id="nomeAtendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label for="meioDisparo" class="block text-sm font-medium text-gray-700">Meio de Disparo</label>
+                            <select id="meioDisparo" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                                <option value="">Selecione...</option>
+                                <option value="Email">Email</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                                <option value="Telefone">Telefone</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="quantidadeDisparos" class="block text-sm font-medium text-gray-700">Quantidade de Disparos</label>
+                            <input type="number" id="quantidadeDisparos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                        </div>
+                        <div>
+                            <label for="positivos" class="block text-sm font-medium text-gray-700">Quantidade de Positivos</label>
+                            <input type="number" id="positivos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                        </div>
+                        <div>
+                            <label for="negativos" class="block text-sm font-medium text-gray-700">Quantidade de Negativos</label>
+                            <input type="number" id="negativos" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                        </div>
+                        <div>
+                            <label for="evidencia" class="block text-sm font-medium text-gray-700">Evidência (URL ou Observações)</label>
+                            <input type="text" id="evidencia" placeholder="Link para o relatório ou observações" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Salvar Dados</button>
+                    </form>
+                </div>
+
+                <!-- Seção de Relatórios -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Relatórios</h2>
+                        <div id="report-controls" class="flex space-x-2">
+                            <button id="report-diario" class="px-3 py-1 text-sm rounded-full bg-sky-500 text-white font-semibold hover:bg-sky-600 transition">Diário</button>
+                            <button id="report-semanal" class="px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Semanal</button>
+                            <button id="report-anual" class="px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Anual</button>
+                        </div>
+                    </div>
+                    
+                    <div id="report-filters" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <label for="filter-atendente" class="block text-sm font-medium text-gray-700">Atendente</label>
+                            <select id="filter-atendente" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
+                                <option value="all">Todos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-meio" class="block text-sm font-medium text-gray-700">Meio de Disparo</label>
+                            <select id="filter-meio" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
+                                <option value="all">Todos</option>
+                                <option value="Email">Email</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                                <option value="Telefone">Telefone</option>
+                            </select>
+                        </div>
+                        <div id="filter-unidade-container" class="hidden">
+                            <label for="filter-unidade" class="block text-sm font-medium text-gray-700">Unidade</label>
+                            <select id="filter-unidade" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
+                                <option value="all">Todas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-start-date" class="block text-sm font-medium text-gray-700">Data Inicial</label>
+                            <input type="date" id="filter-start-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
+                        </div>
+                        <div>
+                            <label for="filter-end-date" class="block text-sm font-medium text-gray-700">Data Final</label>
+                            <input type="date" id="filter-end-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-xl">
+                        </div>
+                    </div>
+                    <div id="report-summary" class="mt-6 p-4 bg-gray-100 rounded-xl">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Resumo</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><span class="font-medium">Total de Disparos:</span> <span id="summary-disparos" class="font-bold">0</span></div>
+                            <div><span class="font-medium">Total de Positivos:</span> <span id="summary-positivos" class="font-bold">0</span></div>
+                            <div><span class="font-medium">Total de Negativos:</span> <span id="summary-negativos" class="font-bold">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Exportação -->
+                    <div class="mt-6 flex justify-end space-x-4">
+                        <button id="export-pdf-btn" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-semibold hover:bg-gray-600 transition duration-300 shadow-md">Exportar PDF</button>
+                        <button id="export-excel-btn" class="bg-green-500 text-white px-4 py-2 rounded-xl font-semibold hover:bg-green-600 transition duration-300 shadow-md">Exportar Excel</button>
+                    </div>
+                    
+                    <!-- Tabela de Dados Brutos -->
+                    <div class="mt-8 overflow-x-auto">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Bases Cadastradas</h3>
+                        <table class="min-w-full bg-white border border-gray-200 rounded-xl">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Data</th>
+                                    <th class="py-3 px-6 text-left">Base</th>
+                                    <th class="py-3 px-6 text-left">Atendente</th>
+                                    <th class="py-3 px-6 text-left">Meio</th>
+                                    <th class="py-3 px-6 text-left">Disparos</th>
+                                    <th class="py-3 px-6 text-left">Positivos</th>
+                                    <th class="py-3 px-6 text-left">Negativos</th>
+                                    <th class="py-3 px-6 text-left">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bases-table-body" class="text-gray-600 text-sm font-light">
+                                <!-- Dados serão inseridos aqui pelo JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Administrador -->
+            <div id="admin-panel" class="hidden mt-8 bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Painel do Administrador</h2>
+                
+                <!-- Formulário para Criar Novo Usuário -->
+                <div class="mb-8">
+                    <h3 class="font-semibold text-gray-700 mb-2">Criar Novo Usuário</h3>
+                    <form id="create-user-form" class="space-y-4">
+                        <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <input type="email" id="new-user-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <input type="password" id="new-user-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <input type="text" id="new-user-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-xl font-semibold hover:bg-green-700 transition shadow-md">Criar Usuário</button>
+                    </form>
+                </div>
+
+                <!-- Tabela para Gerenciar Usuários -->
+                <div>
+                    <h3 class="font-semibold text-gray-700 mb-2">Gerenciar Usuários Existentes</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-xl">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Nome</th>
+                                    <th class="py-3 px-6 text-left">E-mail</th>
+                                    <th class="py-3 px-6 text-left">Unidade</th>
+                                    <th class="py-3 px-6 text-left">Permissão</th>
+                                    <th class="py-3 px-6 text-left">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="text-gray-600 text-sm font-light">
+                                <!-- Dados dos usuários serão inseridos aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <!-- Pop-up de mensagens -->
+        <div id="message-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
+                <p id="message-text" class="text-center text-gray-800 mb-4"></p>
+                <div class="flex justify-center space-x-4">
+                    <button id="close-modal" class="bg-sky-600 text-white p-2 rounded-xl font-semibold hover:bg-sky-700 transition">OK</button>
+                    <button id="confirm-action" class="hidden bg-red-600 text-white p-2 rounded-xl font-semibold hover:bg-red-700 transition">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Mudar Senha -->
+        <div id="password-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Mudar Senha</h3>
+                <form id="change-password-form" class="space-y-4">
+                    <input type="password" id="new-password" placeholder="Nova Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="password" id="confirm-new-password" placeholder="Confirme a Nova Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Mudar Senha</button>
+                </form>
+                <div class="flex justify-center mt-4">
+                    <button id="close-password-modal" class="bg-gray-400 text-white p-2 rounded-xl font-semibold hover:bg-gray-500 transition">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Firebase e JS Logic -->
+    <!-- Rodapé -->
+    <footer class="text-center text-gray-500 text-xs p-4">
+        Sistema Projetado por Marcos Rodrigo Teixeira
+    </footer>
+
+    <!-- Firebase e jsPDF -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <script type="module">
-        // Importações do Firebase via CDN
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            onAuthStateChanged, 
-            createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword, 
-            signOut,
-            signInWithCustomToken,
-            signInAnonymously
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            query, 
-            addDoc, 
-            updateDoc, 
-            onSnapshot, 
-            serverTimestamp, 
-            doc, 
-            getDocs,
-            getDoc,
-            setDoc,
-            writeBatch,
-            where, // Import `where` for queries
-            setLogLevel 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Importações necessárias para a versão modular do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, onSnapshot, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- Variáveis de Configuração e Globais ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'gestaodeleadsangra';
-        
+        // Variáveis globais fornecidas pelo ambiente
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyAY-rGNBHMsT5QqHHvNsZ9VzB3kyHtYPks",
-            authDomain: "gestaodeleadsangra.firebaseapp.com",
-            projectId: "gestaodeleadsangra",
-            storageBucket: "gestaodeleadsangra.firebasestorage.app",
-            messagingSenderId: "706992622509",
-            appId: "1:706992622509:web:b091d4e27920d7d85e2f24"
+            apiKey: "AIzaSyBo6SZLEEXvIM6tbRjn-Zza-IrA2uCJ_p0",
+            authDomain: "gestaodebasesoeste-b8648.firebaseapp.com",
+            projectId: "gestaodebasesoeste-b8648",
+            storageBucket: "gestaodebasesoeste-b8648.firebasestorage.app",
+            messagingSenderId: "475439316770",
+            appId: "1:475439316770:web:15a56cc5a92f6d9f9d2f7b"
         };
-        
-        const LEADS_COLLECTION_PATH = `artifacts/${appId}/public/data/leads`;
-        const USERS_COLLECTION_PATH = `artifacts/${appId}/public/data/users`;
-        const GAP_COLLECTION_PATH = `artifacts/${appId}/public/data/gap_academico`;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        let db;
-        let auth;
-        let currentUser = null;
-        let leadsData = [];
-        let usersData = [];
-        let gapData = [];
-        let currentView = 'cadastro';
-        let unsubscribeLeads = () => {};
-        let unsubscribeUsers = () => {};
-        let unsubscribeGap = () => {};
-        
-        let leadFilterState = { acao: '', dia: '', promotorId: '', converted: 'all', telefone: '', curso: '' };
-        let gapFilterState = { cpf: '', matAcad: 'all', gap: 'all', produto: '', curso: '', semestre: '', metodologia: '', formaIngresso: '' };
-
-        // --- Configuração de Perfis e Permissões ---
-        const ROLES = { 
-            PROMOTOR: 'Promotor', 
-            SALA_MATRICULA: 'Sala de Matrícula', // Novo Perfil
-            QG: 'QG', 
-            LIDER_FDV: 'Líder/FDV' 
-        };
-
-        const VIEW_PERMISSIONS = { 
-            'dashboard': [ROLES.SALA_MATRICULA, ROLES.QG, ROLES.LIDER_FDV],
-            'cadastro':  [ROLES.PROMOTOR, ROLES.SALA_MATRICULA, ROLES.QG, ROLES.LIDER_FDV], 
-            'historico': [ROLES.SALA_MATRICULA, ROLES.QG, ROLES.LIDER_FDV], 
-            'gap':       [ROLES.SALA_MATRICULA, ROLES.LIDER_FDV], // Apenas Sala de Matrícula e Líder
-            'admin':     [ROLES.LIDER_FDV] 
-        };
-
-        // --- Helpers de UI e Formatação ---
-        const formatCpf = (cpf) => cpf ? String(cpf).replace(/\D/g, '') : '';
-        const formatPhone = (phone) => phone ? String(phone).replace(/\D/g, '') : '';
-        const formatDate = (timestamp) => {
-            if (!timestamp) return 'N/A';
-            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        };
-        const generateIcon = (svgPath) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${svgPath}</svg>`;
-        const ICONS = {
-            USERS: generateIcon('<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>'),
-            CHECK: generateIcon('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'),
-            PERCENT: generateIcon('<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>'),
-            USER: generateIcon('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
-            UPLOAD: generateIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'),
-            DOWNLOAD: generateIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'),
-            TAG: generateIcon('<path d="M20.59 13.41l-7.15 7.15a2.12 2.12 0 0 1-3-.01L3 13.25V4a1 1 0 0 1 1-1h9.25l7.34 7.34a2.12 2.12 0 0 1 0 3z"/><line x1="10" y1="10" x2="10.01" y2="10"/>'),
-            PHONE: generateIcon('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.08 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'),
-            MAIL: generateIcon('<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'),
-            LIST: generateIcon('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'),
-            CALENDAR: generateIcon('<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'),
-            HASH: generateIcon('<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>'),
-            ACADEMIC: generateIcon('<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3.33 1.67 6.67 1.67 10 0v-5"/>'),
-        };
-
-        // --- Funções de Navegação e Renderização de UI ---
-        function canView(viewName) {
-            if (!currentUser || !VIEW_PERMISSIONS[viewName]) {
-                return false;
-            }
-            return VIEW_PERMISSIONS[viewName].includes(currentUser.role);
+        // Inicializa o Firebase
+        let app, db, auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch (e) {
+            console.error("Erro ao inicializar o Firebase:", e);
+            showMessage('Erro ao inicializar o Firebase. Verifique a configuração.');
         }
 
-        function renderView(viewName) {
-             if (!canView(viewName)) {
-                if(canView('dashboard')) viewName = 'dashboard';
-                else if (canView('cadastro')) viewName = 'cadastro';
-                else { // Fallback for users with no permitted views (should not happen)
-                    document.getElementById('app-container').innerHTML = '<p class="text-center p-8">Você não tem permissão para visualizar nenhuma página.</p>';
-                    return;
-                }
-            }
-            document.querySelectorAll('.view-content').forEach(view => view.classList.add('hidden'));
-            const targetView = document.getElementById(`view-${viewName}`);
-            if (targetView) targetView.classList.remove('hidden');
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('bg-blue-600', 'text-white');
-                item.classList.add('text-blue-200', 'hover:bg-blue-700');
-                if (item.dataset.view === viewName) {
-                    item.classList.add('bg-blue-600', 'text-white');
-                }
-            });
-            currentView = viewName;
-            switch(viewName) {
-                case 'dashboard': renderDashboard(); break;
-                case 'cadastro': renderRegistration(); break;
-                case 'historico': renderHistory(); break;
-                case 'gap': renderGapView(); break;
-                case 'admin': renderAdminPanel(); break;
-            }
-        }
+        let currentUserId = null;
+        let currentUserRole = null;
+        let currentUserUnit = null;
+        let currentUserCanViewAllUnits = false;
+        let allBasesData = [];
+        let currentDeleteDocId = null;
 
-        function renderNav() {
-            const nav = document.getElementById('main-nav');
-            let navHTML = '';
-            const navConfig = [
-                { view: 'dashboard', label: 'Painel', icon: ICONS.CHECK },
-                { view: 'cadastro', label: 'Leads', icon: ICONS.USER },
-                { view: 'historico', label: 'Histórico', icon: ICONS.LIST },
-                { view: 'gap', label: 'GAP Acadêmico', icon: ICONS.ACADEMIC },
-                { view: 'admin', label: 'Gerenciar', icon: ICONS.USERS }
-            ];
+        // Referências aos elementos do DOM
+        const authScreen = document.getElementById('auth-screen');
+        const mainApp = document.getElementById('main-app');
+        const loginForm = document.getElementById('login-form');
+        const registerFormContainer = document.getElementById('auth-form-container');
+        const baseForm = document.getElementById('base-form');
+        const nomeAtendenteInput = document.getElementById('nomeAtendente');
+        const adminPanel = document.getElementById('admin-panel');
+        const createUserForm = document.getElementById('create-user-form');
+        const userInfoSpan = document.getElementById('user-info');
+        const logoutButton = document.getElementById('logout-button');
+        const changePasswordBtn = document.getElementById('change-password-btn');
+        const basesTableBody = document.getElementById('bases-table-body');
+        const reportDiarioBtn = document.getElementById('report-diario');
+        const reportSemanalBtn = document.getElementById('report-semanal');
+        const reportAnualBtn = document.getElementById('report-anual');
+        const filterAtendenteSelect = document.getElementById('filter-atendente');
+        const filterUnidadeSelect = document.getElementById('filter-unidade');
+        const noDataMessage = document.getElementById('no-data-message');
+        const filterStartDateInput = document.getElementById('filter-start-date');
+        const filterEndDateInput = document.getElementById('filter-end-date');
+        const messageModal = document.getElementById('message-modal');
+        const messageText = document.getElementById('message-text');
+        const closeModalBtn = document.getElementById('close-modal');
+        const confirmActionBtn = document.getElementById('confirm-action');
+        const usersTableBody = document.getElementById('users-table-body');
+        const exportPdfBtn = document.getElementById('export-pdf-btn');
+        const exportExcelBtn = document.getElementById('export-excel-btn');
+        const filterUnidadeContainer = document.getElementById('filter-unidade-container');
+        const passwordModal = document.getElementById('password-modal');
+        const changePasswordForm = document.getElementById('change-password-form');
+        const closePasswordModalBtn = document.getElementById('close-password-modal');
 
-            navConfig.forEach(item => {
-                if (canView(item.view)) {
-                    navHTML += `<button class="nav-item flex items-center space-x-2 p-2 rounded-lg transition-all text-sm" data-view="${item.view}">
-                        ${item.icon.replace('h-5 w-5 mr-2 inline-block', 'h-5 w-5')}
-                        <span class="hidden sm:inline">${item.label}</span>
-                    </button>`;
-                }
-            });
-            nav.innerHTML = navHTML;
-            
-            document.querySelectorAll('.nav-item').forEach(btn => {
-                btn.addEventListener('click', (e) => renderView(e.currentTarget.dataset.view));
-            });
-        }
-        
-        // --- 1. Inicialização do Firebase e Autenticação ---
-        async function initApp() {
-            try {
-                // setLogLevel('debug');
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                }
-
-                onAuthStateChanged(auth, async (user) => {
-                    document.getElementById('loading-screen').classList.add('hidden');
-                    if (user && !user.isAnonymous) {
-                        await handleUserLogin(user);
-                    } else {
-                        handleUserLogout();
-                    }
-                });
-                document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-            } catch (error) {
-                console.error("Erro na inicialização do Firebase:", error);
-                document.getElementById('loading-screen').innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg">Erro fatal. Verifique o console.</div>`;
+        // Função para mostrar mensagens em um modal
+        function showMessage(message, isConfirmation = false, onConfirm = null) {
+            messageText.textContent = message;
+            messageModal.classList.remove('hidden');
+            if (isConfirmation) {
+                closeModalBtn.classList.add('hidden');
+                confirmActionBtn.classList.remove('hidden');
+                confirmActionBtn.onclick = onConfirm;
+            } else {
+                closeModalBtn.classList.remove('hidden');
+                confirmActionBtn.classList.add('hidden');
             }
         }
-        
-        async function handleUserLogin(user) {
-            const userProfile = await fetchUserProfile(user.uid, user.email);
-            currentUser = { uid: user.uid, email: user.email, ...userProfile };
-            
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-container').classList.remove('hidden');
-            
-            document.getElementById('user-info-display').innerHTML = `
-                <div class="flex items-center space-x-2">
-                    <i class="gg-user"></i>
-                    <span class="font-semibold">${currentUser.name || currentUser.email}</span>
-                    <span class="text-xs bg-blue-500 px-2 py-0.5 rounded-full">${currentUser.role}</span>
+        closeModalBtn.addEventListener('click', () => {
+            messageModal.classList.add('hidden');
+        });
+
+        // Alterna entre login e cadastro
+        document.getElementById('show-register').addEventListener('click', (e) => {
+            e.preventDefault();
+            registerFormContainer.innerHTML = `
+                <form id="register-form" class="space-y-4">
+                    <input type="text" id="register-name" placeholder="Nome Completo" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="email" id="register-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="password" id="register-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="text" id="register-unidade" placeholder="Unidade (Ex: Leste, Sul)" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Cadastrar</button>
+                </form>
+                <div class="mt-4 text-center">
+                    <p class="text-sm text-gray-600">
+                        Já tem uma conta? <a href="#" id="show-login" class="text-sky-600 hover:underline">Entrar</a>
+                    </p>
                 </div>
             `;
-            document.getElementById('footer-content').innerText = "Sistema de Gestão de Leads | Criado por Marcos Teixeira";
-            
-            if (canView('dashboard')) {
-                currentView = 'dashboard';
-            } else {
-                currentView = 'cadastro';
+            // Adiciona o event listener para o novo formulário de registro
+            document.getElementById('register-form').addEventListener('submit', handleRegister);
+            document.getElementById('show-login').addEventListener('click', (e) => {
+                e.preventDefault();
+                registerFormContainer.innerHTML = `
+                    <form id="login-form" class="space-y-4">
+                        <input type="email" id="login-email" placeholder="E-mail" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="password" id="login-password" placeholder="Senha" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <button type="submit" class="w-full bg-sky-600 text-white p-3 rounded-xl font-semibold hover:bg-sky-700 transition duration-300 shadow-md">Entrar</button>
+                    </form>
+                    <div class="mt-4 text-center">
+                        <p class="text-sm text-gray-600">
+                            Não tem uma conta? <a href="#" id="show-register" class="text-sky-600 hover:underline">Cadastre-se</a>
+                        </p>
+                    </div>
+                </div>
+            `;
+                document.getElementById('login-form').addEventListener('submit', handleLogin);
+            });
+        });
+
+        // Lidar com o login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                showMessage(`Erro ao fazer login: ${error.message}`);
             }
-
-            setupDataListeners();
-            renderNav();
-            renderView(currentView);
         }
+        loginForm.addEventListener('submit', handleLogin);
 
-        function handleUserLogout() {
-            currentUser = null;
-            leadsData = [];
-            usersData = [];
-            gapData = [];
-            unsubscribeLeads();
-            unsubscribeUsers();
-            unsubscribeGap();
-            document.getElementById('app-container').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('hidden');
-            renderAuthScreen(true);
-        }
+        // Lidar com o registro
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const unidade = document.getElementById('register-unidade').value;
 
-        async function fetchUserProfile(uid, email, name = null) {
-            const userDocRef = doc(db, USERS_COLLECTION_PATH, uid);
-            const userDocSnap = await getDoc(userDocRef);
+            try {
+                const adminDoc = await getDoc(doc(db, "app_state", "admin"));
+                let isFirstUser = !adminDoc.exists();
 
-            if (userDocSnap.exists()) {
-                return userDocSnap.data();
-            } else {
-                let isFirstUser = false;
-                try {
-                    const usersQuery = query(collection(db, USERS_COLLECTION_PATH));
-                    const allUsersSnapshot = await getDocs(usersQuery);
-                    isFirstUser = allUsersSnapshot.empty;
-                } catch (error) {
-                    console.warn("Could not query users collection to determine role.", error);
-                    console.warn("Assuming this is the first user registration and assigning Admin role.");
-                    isFirstUser = true; 
-                }
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
 
-                const newRole = isFirstUser ? ROLES.LIDER_FDV : ROLES.PROMOTOR;
-                const defaultName = email ? email.split('@')[0] : `user_${uid.substring(0, 6)}`;
+                const userRole = isFirstUser ? 'admin' : 'user';
+                const userUnidade = isFirstUser ? 'Oeste' : unidade;
+                const canViewAllUnits = isFirstUser;
 
-                const newProfile = {
+                await setDoc(doc(db, "users", user.uid), {
+                    name: name,
                     email: email,
-                    role: newRole,
-                    name: name || defaultName,
-                    createdAt: serverTimestamp(),
-                };
-                await setDoc(userDocRef, newProfile);
-                return newProfile;
-            }
-        }
-        
-        function renderAuthScreen(isLogin) {
-            const authCard = document.getElementById('auth-card');
-            authCard.innerHTML = `
-                <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-6">${isLogin ? 'Acesso ao Sistema' : 'Crie sua Conta'}</h2>
-                <div id="auth-message" class="hidden mb-4 p-3 bg-red-100 text-red-700 rounded-lg"></div>
-                <form id="auth-form" class="space-y-4">
-                    ${!isLogin ? renderInputField("Nome Completo", "auth-name", "text", true, "Seu nome e sobrenome", ICONS.USER) : ''}
-                    ${renderInputField("Email", "auth-email", "email", true, "seu@email.com", ICONS.MAIL)}
-                    ${renderInputField("Senha", "auth-password", "password", true, "Mínimo 6 caracteres", ICONS.HASH)}
-                    <button type="submit" id="btn-auth-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl">${isLogin ? 'Entrar' : 'Cadastrar'}</button>
-                </form>
-                <p class="mt-6 text-center text-sm text-gray-600">
-                    ${isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}
-                    <button id="btn-toggle-auth" class="font-semibold text-blue-600 hover:text-blue-800">${isLogin ? "Crie uma conta" : "Faça Login"}</button>
-                </p>`;
-            document.getElementById('btn-toggle-auth').addEventListener('click', () => renderAuthScreen(!isLogin));
-            document.getElementById('auth-form').addEventListener('submit', (e) => handleAuth(e, isLogin));
-        }
-
-        async function handleAuth(e, isLogin) {
-            e.preventDefault();
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            const name = !isLogin ? document.getElementById('auth-name').value : null;
-            const msgEl = document.getElementById('auth-message');
-            msgEl.classList.add('hidden');
-
-            try {
-                if (isLogin) {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } else {
-                    if (!name) {
-                        msgEl.textContent = 'O campo "Nome Completo" é obrigatório.';
-                        msgEl.classList.remove('hidden');
-                        return;
-                    }
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    await fetchUserProfile(userCredential.user.uid, email, name);
-                }
-            } catch (error) {
-                console.error("Authentication Error:", error);
-                let msg = 'Ocorreu um erro. Verifique o console para mais detalhes.';
-                if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                    msg = 'Email ou senha incorretos.';
-                } else if (error.code === 'auth/email-already-in-use') {
-                    msg = 'Este email já está cadastrado. Por favor, faça login.';
-                } else if (error.code === 'auth/weak-password') {
-                    msg = 'A senha deve ter pelo menos 6 caracteres.';
-                } else if (error.code === 'auth/invalid-email') {
-                    msg = 'O formato do email é inválido.';
-                }
-                msgEl.textContent = msg;
-                msgEl.classList.remove('hidden');
-            }
-        }
-        
-        // --- 2. Listeners de Dados ---
-        function setupDataListeners() {
-            if (!db || !currentUser) return;
-            
-            // FIX: Conditionally set up listeners based on user permissions.
-            
-            // Listener for Users (everyone needs this)
-            const usersQuery = query(collection(db, USERS_COLLECTION_PATH));
-            unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
-                usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const myProfile = usersData.find(u => u.id === currentUser.uid);
-                if (myProfile && (myProfile.role !== currentUser.role || myProfile.name !== currentUser.name)) {
-                    currentUser = { ...currentUser, ...myProfile };
-                    renderNav();
-                    document.getElementById('user-info-display').innerHTML = `...`; // Simplificado
-                }
-                if (currentView === 'admin' || currentView === 'historico') renderView(currentView);
-            }, (error) => console.error("Erro ao ouvir usuários:", error));
-
-            // Listener for Leads
-            let leadsQuery;
-            if (canView('historico')) {
-                // Admins/QG/Sala de Matrícula can see all leads
-                leadsQuery = query(collection(db, LEADS_COLLECTION_PATH));
-            } else if(canView('cadastro')) {
-                // Promotors can only see their own leads
-                leadsQuery = query(collection(db, LEADS_COLLECTION_PATH), where("promotorId", "==", currentUser.uid));
-            }
-
-            if(leadsQuery) {
-                unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
-                    leadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    if (currentView === 'dashboard' || currentView === 'historico' || currentView === 'cadastro') {
-                        renderView(currentView);
-                    }
-                }, (error) => console.error("Erro ao ouvir leads:", error));
-            }
-
-            // Listener for GAP Acadêmico
-            if (canView('gap')) {
-                const gapQuery = query(collection(db, GAP_COLLECTION_PATH));
-                unsubscribeGap = onSnapshot(gapQuery, (snapshot) => {
-                    gapData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    if (currentView === 'gap') renderView('gap');
-                }, (error) => console.error("Erro ao ouvir GAP:", error));
-            }
-        }
-        
-        // --- 3. Dashboard ---
-        function renderDashboard() {
-            const stats = calculateStats();
-            const dashboardEl = document.getElementById('view-dashboard');
-            dashboardEl.innerHTML = `
-                <h2 class="text-3xl font-extrabold text-gray-900 border-b-4 border-blue-500 pb-2 mb-4">Painel Principal</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    ${renderStatCard("Total de Leads", stats.totalLeads, ICONS.USERS, "bg-blue-500")}
-                    ${renderStatCard("Leads Convertidos", stats.convertedLeads, ICONS.CHECK, "bg-green-500")}
-                    ${renderStatCard("Taxa de Conversão", `${stats.conversionRate}%`, ICONS.PERCENT, "bg-purple-500")}
-                    ${renderStatCard("Seus Leads", stats.userLeads, ICONS.USER, "bg-yellow-500")}
-                </div>`;
-        }
-
-        function calculateStats() {
-            const totalLeads = leadsData.length;
-            const convertedLeads = leadsData.filter(lead => lead.converted).length;
-            const userLeads = leadsData.filter(lead => lead.promotorId === currentUser.uid).length;
-            const conversionRate = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100).toFixed(1) : 0.0;
-            return { totalLeads, convertedLeads, userLeads, conversionRate };
-        }
-
-        function renderStatCard(title, value, iconHTML, colorClass) {
-            return `
-                <div class="p-5 rounded-xl shadow-lg border-l-4 ${colorClass.replace('bg-', 'border-')} bg-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500 truncate">${title}</p>
-                            <p class="mt-1 text-3xl font-bold text-gray-900">${value}</p>
-                        </div>
-                        <div class="p-3 rounded-full ${colorClass} bg-opacity-10 text-white">
-                            ${iconHTML.replace('h-5 w-5 mr-2 inline-block', `h-6 w-6 ${colorClass.replace('bg', 'text')}`)}
-                        </div>
-                    </div>
-                </div>`;
-        }
-        
-        function showMessage(el, message, isError) {
-            el.textContent = message;
-            el.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
-            el.classList.add(isError ? 'bg-red-100' : 'bg-green-100', isError ? 'text-red-700' : 'text-green-700');
-        }
-
-        // --- 4. Cadastro de Leads ---
-        function renderRegistration() {
-            const formContainer = document.getElementById('view-cadastro');
-            formContainer.innerHTML = `
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-3xl font-extrabold text-gray-900 border-b-4 border-blue-500 pb-2">Cadastro de Leads</h2>
-                    <a href="https://estacioangra.my.canva.site/c-pia-de-cat-logo-de-cursos-pdf-clic-vel" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all">
-                        Conheça nossos Cursos
-                    </a>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Formulário Individual -->
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2">Novo Lead Individual</h3>
-                        <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl border border-gray-100">
-                             <div id="registration-message" class="hidden mb-4 p-3 rounded-lg text-center font-medium shadow-md"></div>
-                             <form id="lead-form" class="space-y-4">
-                                 ${renderInputField("Nome da Ação", "acao", "text", true, "Ex: Evento Junino", ICONS.TAG)}
-                                 ${renderInputField("Nome Completo", "nome", "text", true, "", ICONS.USER)}
-                                 ${renderInputField("Telefone (WhatsApp)", "telefone", "tel", true, "Apenas números com DDD", ICONS.PHONE)}
-                                 ${renderInputField("Email", "email", "email", false, "exemplo@dominio.com", ICONS.MAIL)}
-                                 ${renderInputField("CPF", "cpf", "text", false, "Apenas números", ICONS.HASH)}
-                                 ${renderInputField("Curso de Interesse", "cursoInteresse", "text", false, "Ex: Engenharia", ICONS.LIST)}
-                                 <button type="submit" id="btn-save-lead" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl">Salvar Novo Lead</button>
-                             </form>
-                        </div>
-                    </div>
-                    <!-- Importação em Lote -->
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2">Importar Leads em Lote (Excel)</h3>
-                        <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl border border-gray-100 space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Arquivo Excel (.xlsx)</label>
-                                <input type="file" id="file-import-input" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
-                            </div>
-                            <p class="text-xs text-gray-500">O arquivo deve ter as colunas: <code class="bg-gray-100 p-1 rounded">acao,nome,telefone,email,cpf,cursoInteresse</code>. A primeira linha deve ser o cabeçalho.</p>
-                            <button id="btn-import-file" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center">${ICONS.UPLOAD} <span>Importar Arquivo</span></button>
-                            <div id="file-import-results" class="mt-4 text-sm space-y-2"></div>
-                        </div>
-                    </div>
-                </div>`;
-            document.getElementById('lead-form').addEventListener('submit', handleSaveLead);
-            document.getElementById('btn-import-file').addEventListener('click', handleFileImport);
-        }
-        
-        function renderInputField(label, name, type, required, placeholder, iconHTML = '') {
-            return `
-                <div>
-                    <label for="${name}" class="block text-sm font-medium text-gray-700 flex items-center">
-                        ${iconHTML ? iconHTML.replace('h-5 w-5', 'h-4 w-4').replace('mr-2 inline-block', 'mr-1 text-blue-500') : ''}
-                        ${label}
-                        ${required ? '<span class="ml-1 text-red-500">*</span>' : ''}
-                    </label>
-                    <div class="mt-1">
-                        <input type="${type}" name="${name}" id="${name}" ${required ? 'required' : ''} placeholder="${placeholder}" class="block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                </div>`;
-        }
-
-        function renderSelectField(label, name, options, required, iconHTML = '') {
-            return `
-                <div>
-                    <label for="${name}" class="block text-sm font-medium text-gray-700 flex items-center">
-                        ${iconHTML ? iconHTML.replace('h-5 w-5', 'h-4 w-4').replace('mr-2 inline-block', 'mr-1 text-blue-500') : ''}
-                        ${label}
-                        ${required ? '<span class="ml-1 text-red-500">*</span>' : ''}
-                    </label>
-                    <div class="mt-1">
-                        <select id="${name}" name="${name}" ${required ? 'required' : ''} class="block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-blue-500 focus:border-blue-500">
-                           <option value="">-- Selecione --</option>
-                           ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                        </select>
-                    </div>
-                </div>`;
-        }
-        
-        async function handleSaveLead(e) {
-            e.preventDefault();
-            const form = e.target;
-            const btn = document.getElementById('btn-save-lead');
-            const msgEl = document.getElementById('registration-message');
-            
-            msgEl.classList.add('hidden');
-            btn.disabled = true;
-
-            const formData = {
-                acao: form.acao.value,
-                nome: form.nome.value,
-                telefone: form.telefone.value,
-                email: form.email.value,
-                cpf: form.cpf.value,
-                cursoInteresse: form.cursoInteresse.value
-            };
-
-            if (!formData.acao || !formData.nome || !formData.telefone) {
-                showMessage(msgEl, 'Por favor, preencha os campos obrigatórios.', true);
-                btn.disabled = false;
-                return;
-            }
-
-            const cleanedPhone = formatPhone(formData.telefone);
-            const cleanedCpf = formatCpf(formData.cpf);
-
-            const duplicateExists = leadsData.some(lead => {
-                const isPhoneDuplicate = cleanedPhone && formatPhone(lead.telefone) === cleanedPhone;
-                const isCpfDuplicate = cleanedCpf && formatCpf(lead.cpf) === cleanedCpf;
-                return isPhoneDuplicate || isCpfDuplicate;
-            });
-
-            if (duplicateExists) {
-                showMessage(msgEl, 'ERRO: Lead já cadastrado (Telefone ou CPF duplicado).', true);
-                btn.disabled = false;
-                return;
-            }
-
-            try {
-                await addDoc(collection(db, LEADS_COLLECTION_PATH), {
-                    ...formData,
-                    telefone: cleanedPhone,
-                    cpf: cleanedCpf,
-                    converted: false,
-                    createdAt: serverTimestamp(),
-                    promotorId: currentUser.uid,
-                    promotorName: currentUser.name
+                    unidade: userUnidade,
+                    role: userRole,
+                    canViewAllUnits: canViewAllUnits
                 });
-                showMessage(msgEl, 'Lead cadastrado com sucesso!', false);
-                form.reset();
-            } catch (error) {
-                console.error("Erro ao salvar o lead:", error);
-                showMessage(msgEl, 'Erro ao salvar o lead. Tente novamente.', true);
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        async function handleFileImport() {
-            const fileInput = document.getElementById('file-import-input');
-            const resultsEl = document.getElementById('file-import-results');
-            const btn = document.getElementById('btn-import-file');
-            if (!fileInput.files.length) {
-                resultsEl.innerHTML = `<p class="text-red-600 p-3 bg-red-50 rounded-lg">Por favor, selecione um arquivo Excel.</p>`;
-                return;
-            }
-            btn.disabled = true;
-            btn.innerHTML = 'Processando...';
-            resultsEl.innerHTML = '';
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            reader.onload = async (event) => {
-                const errors = [];
-                const leadsToImport = [];
-
-                try {
-                    const data = event.target.result;
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const jsonLeads = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    if (jsonLeads.length === 0) {
-                        errors.push("O arquivo Excel parece estar vazio ou sem dados.");
-                    } else {
-                        jsonLeads.forEach((leadData, index) => {
-                            const lineNumber = index + 2; // +1 for header, +1 for 0-index
-                            if (!leadData.acao || !leadData.nome || !leadData.telefone) {
-                                errors.push(`Linha ${lineNumber}: Campos obrigatórios (acao, nome, telefone) faltando.`);
-                                return;
-                            }
-
-                            const cleanedPhone = formatPhone(leadData.telefone);
-                            const cleanedCpf = formatCpf(leadData.cpf);
-
-                            if (leadsData.some(lead => formatPhone(lead.telefone) === cleanedPhone || (cleanedCpf && formatCpf(lead.cpf) === cleanedCpf))) {
-                                errors.push(`Linha ${lineNumber}: Lead com telefone ou CPF já existe no sistema.`);
-                                return;
-                            }
-
-                            leadsToImport.push({
-                                acao: leadData.acao,
-                                nome: leadData.nome,
-                                telefone: cleanedPhone,
-                                email: leadData.email || '',
-                                cpf: cleanedCpf,
-                                cursoInteresse: leadData.cursoInteresse || '',
-                                converted: false,
-                                createdAt: serverTimestamp(),
-                                promotorId: currentUser.uid,
-                                promotorName: currentUser.name
-                            });
-                        });
-                    }
-
-                    if (leadsToImport.length > 0) {
-                        const batch = writeBatch(db);
-                        leadsToImport.forEach(lead => {
-                            const newLeadRef = doc(collection(db, LEADS_COLLECTION_PATH));
-                            batch.set(newLeadRef, lead);
-                        });
-                        await batch.commit();
-                        resultsEl.innerHTML += `<div class="p-3 bg-green-50 text-green-700 rounded-lg fade-in">${leadsToImport.length} leads importados com sucesso!</div>`;
-                    }
-                    
-                } catch (error) {
-                    errors.push(`Erro ao processar o arquivo: ${error.message}`);
-                } finally {
-                    if (errors.length > 0) {
-                        resultsEl.innerHTML += `<div class="p-3 bg-yellow-50 text-yellow-700 rounded-lg mt-2 fade-in"><strong>Avisos:</strong><ul>${errors.map(e => `<li class="ml-4 list-disc">${e}</li>`).join('')}</ul></div>`;
-                    }
-                    fileInput.value = '';
-                    btn.disabled = false;
-                    btn.innerHTML = `${ICONS.UPLOAD} <span>Importar Arquivo</span>`;
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // --- 5. Histórico de Leads ---
-        function renderHistory() {
-            const historyEl = document.getElementById('view-historico');
-            const uniqueActions = [...new Set(leadsData.map(lead => lead.acao).filter(Boolean))].sort();
-            const promotors = [...new Map(usersData.map(user => [user.id, user.name])).values()].filter(Boolean).sort();
-            const uniqueCourses = [...new Set(leadsData.map(lead => lead.cursoInteresse).filter(Boolean))].sort();
-
-            historyEl.innerHTML = `
-                <div class="flex justify-between items-center mb-4">
-                     <h2 class="text-3xl font-extrabold text-gray-900 border-b-4 border-blue-500 pb-2">Acesso e Histórico de Leads</h2>
-                     <a href="https://estacio-my.sharepoint.com/:o:/g/personal/marcos_teixeira_estacio_br/EuQ7eSP7m8ZMothtgQfTswEB_48PoRTW4RMo7Jbn8udkzg?e=JLQ370" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all">
-                        Mensagens para usar
-                    </a>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-lg grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 border" id="filter-container">
-                    ${renderFilterSelect("Ação", "acao", uniqueActions, leadFilterState.acao, ICONS.TAG)}
-                    ${renderFilterDate("Dia", "dia", leadFilterState.dia, ICONS.CALENDAR)}
-                    ${renderFilterSelect("Promotor", "promotorId", promotors, leadFilterState.promotorId, ICONS.USER)}
-                    ${renderFilterInput("Telefone", "telefone", leadFilterState.telefone, ICONS.PHONE, "Buscar telefone...")}
-                    ${renderFilterSelect("Curso", "curso", uniqueCourses, leadFilterState.curso, ICONS.LIST)}
-                    ${renderFilterStatus("Status", "converted", leadFilterState.converted, ICONS.CHECK)}
-                    <div class='flex items-end space-x-2 col-span-1 sm:col-span-2 md:col-span-2'>
-                        <button id="btn-export-excel" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center">${ICONS.DOWNLOAD.replace('mr-2', 'mr-1')} <span>Exportar</span></button>
-                        <button id="btn-clear-lead-filters" class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg">Limpar</button>
-                    </div>
-                </div>
-                <div id="leads-table-container" class="mt-8"></div>
-            `;
-            
-            const filterForm = document.getElementById('filter-container');
-            filterForm.addEventListener('input', (e) => handleLeadFilterChange(e.target.name, e.target.value));
-            filterForm.addEventListener('change', (e) => handleLeadFilterChange(e.target.name, e.target.value));
-            document.getElementById('btn-clear-lead-filters').addEventListener('click', handleClearLeadFilters);
-            document.getElementById('btn-export-excel').addEventListener('click', handleExportToExcel);
-            
-            renderLeadsTable();
-        }
-        
-        function renderFilterInput(label, name, currentValue, iconHTML, placeholder) { 
-            return `<div>
-                        <label for="${name}" class="block text-sm font-medium text-gray-700 mb-1 flex items-center">${iconHTML.replace('h-5 w-5','h-4 w-4').replace('mr-2 inline-block','mr-1 text-blue-500')} ${label}</label>
-                        <input type="text" name="${name}" id="${name}" value="${currentValue}" placeholder="${placeholder}" class="block w-full rounded-lg border-gray-300 shadow-sm p-2 border"/>
-                    </div>`; 
-        }
-
-        function renderFilterSelect(label, name, options, currentValue, iconHTML) { 
-            return `<div><label for="${name}" class="block text-sm font-medium text-gray-700 mb-1 flex items-center">${iconHTML.replace('h-5 w-5','h-4 w-4').replace('mr-2 inline-block','mr-1 text-blue-500')} ${label}</label><select id="${name}" name="${name}" class="block w-full rounded-lg border-gray-300 shadow-sm p-2 border"><option value="">-- Todos --</option>${options.map(opt => `<option value="${opt}" ${opt === currentValue ? 'selected' : ''}>${opt}</option>`).join('')}</select></div>`; 
-        }
-        function renderFilterDate(label, name, currentValue, iconHTML) { 
-            return `<div><label for="${name}" class="block text-sm font-medium text-gray-700 mb-1 flex items-center">${iconHTML.replace('h-5 w-5','h-4 w-4').replace('mr-2 inline-block','mr-1 text-blue-500')} ${label}</label><input type="date" name="${name}" id="${name}" value="${currentValue}" class="block w-full rounded-lg border-gray-300 shadow-sm p-2 border"/></div>`; 
-        }
-        function renderFilterStatus(label, name, currentValue, iconHTML) { 
-            return `<div><label for="${name}" class="block text-sm font-medium text-gray-700 mb-1 flex items-center">${iconHTML.replace('h-5 w-5','h-4 w-4').replace('mr-2 inline-block','mr-1 text-blue-500')} ${label}</label><select id="${name}" name="${name}" class="block w-full rounded-lg border-gray-300 shadow-sm p-2 border"><option value="all" ${currentValue === 'all' ? 'selected' : ''}>Todos</option><option value="true" ${currentValue === 'true' ? 'selected' : ''}>Convertido</option><option value="false" ${currentValue === 'false' ? 'selected' : ''}>Pendente</option></select></div>`; 
-        }
-
-        function handleLeadFilterChange(name, value) {
-            leadFilterState[name] = value;
-            renderLeadsTable();
-        }
-
-        function handleClearLeadFilters() {
-            leadFilterState = { acao: '', dia: '', promotorId: '', converted: 'all', telefone: '', curso: '' };
-            renderHistory();
-        }
-
-        function filterLeads() {
-            let filtered = [...leadsData];
-            if (leadFilterState.acao) filtered = filtered.filter(lead => lead.acao === leadFilterState.acao);
-            if (leadFilterState.dia) {
-                const filterDateStr = new Date(leadFilterState.dia).toDateString();
-                filtered = filtered.filter(lead => lead.createdAt && lead.createdAt.toDate().toDateString() === filterDateStr);
-            }
-            if (leadFilterState.promotorId) filtered = filtered.filter(lead => lead.promotorName === leadFilterState.promotorId);
-            if (leadFilterState.telefone) filtered = filtered.filter(lead => lead.telefone && lead.telefone.includes(leadFilterState.telefone));
-            if (leadFilterState.curso) filtered = filtered.filter(lead => lead.cursoInteresse === leadFilterState.curso);
-            if (leadFilterState.converted !== 'all') filtered = filtered.filter(lead => String(lead.converted) === leadFilterState.converted);
-            return filtered.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        }
-
-        function handleExportToExcel() {
-            const leadsToExport = filterLeads();
-            if (leadsToExport.length === 0) {
-                alert("Nenhum lead para exportar com os filtros atuais.");
-                return;
-            }
-            const dataForSheet = leadsToExport.map(lead => ({
-                'Ação': lead.acao,
-                'Nome Completo': lead.nome,
-                'Telefone': lead.telefone,
-                'Email': lead.email || 'N/A',
-                'CPF': lead.cpf || 'N/A',
-                'Curso de Interesse': lead.cursoInteresse || 'N/A',
-                'Convertido': lead.converted ? 'Sim' : 'Não',
-                'Data de Cadastro': formatDate(lead.createdAt),
-                'Promotor': lead.promotorName || 'N/A'
-            }));
-            const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Leads");
-            XLSX.writeFile(workbook, "leads_exportados.xlsx");
-        }
-        
-        function renderLeadsTable() {
-            const container = document.getElementById('leads-table-container');
-            const filteredLeads = filterLeads();
-            let tableHTML = `<div class="overflow-x-auto bg-white rounded-xl shadow-2xl border"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-blue-50"><tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ação/Data</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome/Contato</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Curso/Promotor</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Conversão</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
-                </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
-
-            if (filteredLeads.length === 0) {
-                tableHTML += `<tr><td colSpan="5" class="px-6 py-4 text-center text-gray-500">Nenhum lead encontrado.</td></tr>`;
-            } else {
-                filteredLeads.forEach(lead => {
-                    const promotorName = lead.promotorName || usersData.find(u => u.id === lead.promotorId)?.name || 'Desconhecido';
-                    tableHTML += `<tr class="hover:bg-blue-50">
-                        <td class="px-6 py-4"><div class="font-medium text-gray-900">${lead.acao}</div><div class="text-xs text-gray-500">${formatDate(lead.createdAt)}</div></td>
-                        <td class="px-6 py-4"><div class="font-semibold text-blue-600">${lead.nome}</div><div class="text-xs text-gray-500">${lead.telefone}</div></td>
-                        <td class="px-6 py-4 hidden sm:table-cell"><div class="text-sm">${lead.cursoInteresse || 'N/A'}</div><div class="text-xs text-gray-500">${promotorName}</div></td>
-                        <td class="px-6 py-4 text-center"><button data-lead-id="${lead.id}" data-status="${lead.converted}" class="toggle-conversion-btn px-3 py-1 rounded-full text-xs font-bold ${lead.converted ? 'bg-green-500 text-white' : 'bg-red-100 text-red-700'}">${lead.converted ? 'CONVERTIDO' : 'PENDENTE'}</button></td>
-                        <td class="px-6 py-4 text-center"><a href="https://wa.me/55${lead.telefone}" target="_blank" class="text-green-600 hover:text-green-800">WhatsApp</a></td>
-                    </tr>`;
-                });
-            }
-            tableHTML += `</tbody></table></div>`;
-            container.innerHTML = tableHTML;
-            
-            container.addEventListener('click', e => {
-                if (e.target.classList.contains('toggle-conversion-btn')) {
-                    const { leadId, status } = e.target.dataset;
-                    handleConversionToggle(leadId, status === 'true');
-                }
-            })
-        }
-
-        async function handleConversionToggle(leadId, currentStatus) {
-            if (!db) return;
-            try {
-                const docRef = doc(db, LEADS_COLLECTION_PATH, leadId);
-                await updateDoc(docRef, { converted: !currentStatus });
-            } catch (error) {
-                console.error("Erro ao atualizar status:", error);
-                alert("Você não tem permissão para alterar este lead.");
-            }
-        }
-        
-        // --- 6. GAP Acadêmico ---
-        function renderGapView() {
-            const gapEl = document.getElementById('view-gap');
-            gapEl.innerHTML = `
-                <h2 class="text-3xl font-extrabold text-gray-900 border-b-4 border-purple-500 pb-2 mb-4">GAP Acadêmico</h2>
                 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    <div>
-                        <div id="gap-dashboard-container"></div>
-                    </div>
-                    <div class="space-y-8">
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-800 mb-2">Novo Cadastro</h3>
-                            <div id="gap-registration-container" class="bg-white p-6 rounded-xl shadow-lg border"></div>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-800 mb-2">Importar em Lote (Excel)</h3>
-                            <div id="gap-import-container" class="bg-white p-6 rounded-xl shadow-lg border"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="gap-filters-container" class="mb-8"></div>
-                <div id="gap-table-container"></div>
-            `;
-            renderGapDashboard();
-            renderGapRegistrationForm();
-            renderGapImportForm();
-            renderGapFilters();
-            renderGapTable();
-        }
-
-        function renderGapDashboard() {
-            const container = document.getElementById('gap-dashboard-container');
-            const stats = calculateGapStats();
-            container.innerHTML = `
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    ${renderStatCard("Total em GAP", stats.total, ICONS.ACADEMIC, "bg-purple-500")}
-                    ${renderStatCard("Mat. Acadêmica OK", stats.matAcad, ICONS.CHECK, "bg-green-500")}
-                    ${renderStatCard("Mat. Financeira OK", stats.matFin, ICONS.HASH, "bg-blue-500")}
-                    ${renderStatCard("Conversão (Acad.)", `${stats.conversionRate}%`, ICONS.PERCENT, "bg-yellow-500")}
-                </div>
-            `;
-        }
-
-        function calculateGapStats() {
-            const total = gapData.length;
-            const matAcad = gapData.filter(g => g.matAcad).length;
-            const matFin = gapData.filter(g => g.matFin).length;
-            const conversionRate = total > 0 ? ((matAcad / total) * 100).toFixed(1) : 0.0;
-            return { total, matAcad, matFin, conversionRate };
-        }
-
-        function renderGapRegistrationForm() {
-            const container = document.getElementById('gap-registration-container');
-            const produtos = ['Técnico', 'Graduação', 'Pós Graduação'];
-            container.innerHTML = `
-                <div id="gap-message" class="hidden mb-4 p-3 rounded-lg text-center font-medium"></div>
-                <form id="gap-form" class="space-y-3">
-                    ${renderSelectField("Produto", "gap-produto", produtos, true)}
-                    ${renderInputField("Nome", "gap-nome", "text", true, "Nome completo do candidato")}
-                    ${renderInputField("CPF", "gap-cpf", "text", true, "Apenas números")}
-                    ${renderInputField("Curso", "gap-curso", "text", true, "Curso de interesse")}
-                    ${renderInputField("Semestre", "gap-semestre", "text", true, "Ex: 2025.1")}
-                    ${renderInputField("Metodologia", "gap-metodologia", "text", false, "EAD, Presencial...")}
-                    ${renderInputField("Forma de Ingresso", "gap-formaIngresso", "text", false, "Vestibular, ENEM...")}
-                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Salvar Candidato</button>
-                </form>
-            `;
-            document.getElementById('gap-form').addEventListener('submit', handleSaveGapEntry);
-        }
-
-        function renderGapImportForm() {
-            const container = document.getElementById('gap-import-container');
-            container.innerHTML = `
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Arquivo Excel (.xlsx)</label>
-                        <input type="file" id="gap-file-import-input" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/>
-                    </div>
-                    <p class="text-xs text-gray-500">Colunas: <code class="bg-gray-100 p-1 rounded">Produto,Nome,CPF,Curso,Semestre,Metodologia,Forma de Ingresso</code>.</p>
-                    <button id="btn-import-gap-file" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">${ICONS.UPLOAD} <span>Importar Arquivo</span></button>
-                    <div id="gap-file-import-results" class="mt-4 text-sm space-y-2"></div>
-                </div>
-            `;
-            document.getElementById('btn-import-gap-file').addEventListener('click', handleGapFileImport);
-        }
-
-        async function handleSaveGapEntry(e) {
-            e.preventDefault();
-            const form = e.target;
-            const msgEl = document.getElementById('gap-message');
-            
-            const newEntry = {
-                produto: form['gap-produto'].value,
-                nome: form['gap-nome'].value,
-                cpf: formatCpf(form['gap-cpf'].value),
-                curso: form['gap-curso'].value,
-                semestre: form['gap-semestre'].value,
-                metodologia: form['gap-metodologia'].value,
-                formaIngresso: form['gap-formaIngresso'].value,
-                documentos: { rg: false, cpf: false, diploma: false, enem: false, historico: false, planoEnsino: false },
-                matAcad: false,
-                matFin: false,
-                observacao: '',
-                createdAt: serverTimestamp(),
-                createdBy: currentUser.uid,
-            };
-            
-            try {
-                await addDoc(collection(db, GAP_COLLECTION_PATH), newEntry);
-                showMessage(msgEl, 'Candidato salvo com sucesso!', false);
-                form.reset();
+                if (isFirstUser) {
+                    await setDoc(doc(db, "app_state", "admin"), { adminId: user.uid });
+                }
+                
+                showMessage(`Usuário ${name} cadastrado com sucesso!`);
             } catch (error) {
-                console.error("Erro ao salvar no GAP:", error);
-                showMessage(msgEl, 'Erro ao salvar. Tente novamente.', true);
+                showMessage(`Erro ao cadastrar: ${error.message}`);
             }
         }
 
-        async function handleGapFileImport() {
-            const fileInput = document.getElementById('gap-file-import-input');
-            const resultsEl = document.getElementById('gap-file-import-results');
-            const btn = document.getElementById('btn-import-gap-file');
-            if (!fileInput.files.length) {
-                resultsEl.innerHTML = `<p class="text-red-600 p-3 bg-red-50 rounded-lg">Por favor, selecione um arquivo Excel.</p>`;
+        // Lidar com a criação de usuário pelo admin
+        createUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('new-user-name').value;
+            const email = document.getElementById('new-user-email').value;
+            const password = document.getElementById('new-user-password').value;
+            const unidade = document.getElementById('new-user-unidade').value;
+            
+            try {
+                const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, "users", newUserCredential.user.uid), {
+                    name, email, unidade, role: 'user', canViewAllUnits: false
+                });
+                showMessage(`Novo usuário (${email}) criado com sucesso!`);
+                createUserForm.reset();
+            } catch (error) {
+                showMessage(`Erro ao criar usuário: ${error.message}`);
+            }
+        });
+
+        // Lidar com a troca de senha do usuário
+        changePasswordBtn.addEventListener('click', () => {
+            passwordModal.classList.remove('hidden');
+        });
+
+        closePasswordModalBtn.addEventListener('click', () => {
+            passwordModal.classList.add('hidden');
+            changePasswordForm.reset();
+        });
+
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('new-password').value;
+            const confirmNewPassword = document.getElementById('confirm-new-password').value;
+
+            if (newPassword !== confirmNewPassword) {
+                showMessage("As senhas não coincidem. Por favor, tente novamente.");
                 return;
             }
-            btn.disabled = true;
-            btn.innerHTML = 'Processando...';
-            resultsEl.innerHTML = '';
 
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            reader.onload = async (event) => {
-                const errors = [];
-                const candidatesToImport = [];
-
-                try {
-                    const data = event.target.result;
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const jsonCandidates = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    if (jsonCandidates.length === 0) {
-                        errors.push("O arquivo Excel parece estar vazio.");
-                    } else {
-                        jsonCandidates.forEach((candidate, index) => {
-                            const lineNumber = index + 2;
-                            const cleanedCpf = formatCpf(candidate.CPF);
-
-                            if (!candidate.Produto || !candidate.Nome || !cleanedCpf || !candidate.Curso || !candidate.Semestre) {
-                                errors.push(`Linha ${lineNumber}: Campos (Produto, Nome, CPF, Curso, Semestre) são obrigatórios.`);
-                                return;
-                            }
-
-                            candidatesToImport.push({
-                                produto: candidate.Produto,
-                                nome: candidate.Nome,
-                                cpf: cleanedCpf,
-                                curso: candidate.Curso,
-                                semestre: candidate.Semestre,
-                                metodologia: candidate.Metodologia || '',
-                                formaIngresso: candidate['Forma de Ingresso'] || '',
-                                documentos: { rg: false, cpf: false, diploma: false, enem: false, historico: false, planoEnsino: false },
-                                matAcad: false,
-                                matFin: false,
-                                observacao: '',
-                                createdAt: serverTimestamp(),
-                                createdBy: currentUser.uid,
-                            });
-                        });
-                    }
-
-                    if (candidatesToImport.length > 0) {
-                        const batch = writeBatch(db);
-                        candidatesToImport.forEach(candidate => {
-                            const newDocRef = doc(collection(db, GAP_COLLECTION_PATH));
-                            batch.set(newDocRef, candidate);
-                        });
-                        await batch.commit();
-                        resultsEl.innerHTML += `<div class="p-3 bg-green-50 text-green-700 rounded-lg fade-in">${candidatesToImport.length} candidatos importados com sucesso!</div>`;
-                    }
-                    
-                } catch (error) {
-                    errors.push(`Erro ao processar o arquivo: ${error.message}`);
-                } finally {
-                    if (errors.length > 0) {
-                        resultsEl.innerHTML += `<div class="p-3 bg-yellow-50 text-yellow-700 rounded-lg mt-2 fade-in"><strong>Avisos:</strong><ul>${errors.map(e => `<li class="ml-4 list-disc">${e}</li>`).join('')}</ul></div>`;
-                    }
-                    fileInput.value = '';
-                    btn.disabled = false;
-                    btn.innerHTML = `${ICONS.UPLOAD} <span>Importar Arquivo</span>`;
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function renderGapFilters() {
-             const container = document.getElementById('gap-filters-container');
-             const unique = (key) => [...new Set(gapData.map(item => item[key]).filter(Boolean))].sort();
-             container.innerHTML = `
-                <div class="bg-white p-6 rounded-xl shadow-lg grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 border" id="gap-filter-form">
-                    ${renderFilterInput("CPF", "cpf", gapFilterState.cpf, ICONS.HASH, "Buscar por CPF...")}
-                    ${renderFilterSelect("Produto", "produto", unique('produto'), gapFilterState.produto, ICONS.ACADEMIC)}
-                    ${renderFilterSelect("Curso", "curso", unique('curso'), gapFilterState.curso, ICONS.LIST)}
-                    ${renderFilterSelect("Semestre", "semestre", unique('semestre'), gapFilterState.semestre, ICONS.CALENDAR)}
-                    ${renderFilterSelect("Metodologia", "metodologia", unique('metodologia'), gapFilterState.metodologia, ICONS.TAG)}
-                    ${renderFilterSelect("Forma Ingresso", "formaIngresso", unique('formaIngresso'), gapFilterState.formaIngresso, ICONS.TAG)}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Mat. Acadêmica</label>
-                        <select name="matAcad" class="block w-full rounded-lg border-gray-300 p-2 border"><option value="all">Todos</option><option value="true">OK</option><option value="false">Pendente</option></select>
-                    </div>
-                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status GAP</label>
-                        <select name="gap" class="block w-full rounded-lg border-gray-300 p-2 border"><option value="all">Todos</option><option value="true">Aguardando Docs</option></select>
-                    </div>
-                    <div class='flex items-end'>
-                        <button id="btn-clear-gap-filters" class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg">Limpar</button>
-                    </div>
-                </div>`;
-            
-            const form = document.getElementById('gap-filter-form');
-            form.addEventListener('input', e => handleGapFilterChange(e.target.name, e.target.value));
-            form.addEventListener('change', e => handleGapFilterChange(e.target.name, e.target.value));
-            document.getElementById('btn-clear-gap-filters').addEventListener('click', () => {
-                gapFilterState = { cpf: '', matAcad: 'all', gap: 'all', produto: '', curso: '', semestre: '', metodologia: '', formaIngresso: '' };
-                renderGapView();
-            });
-        }
-        
-        function handleGapFilterChange(name, value) {
-            gapFilterState[name] = value;
-            renderGapTable();
-        }
-
-        function filterGapData() {
-            return gapData.filter(item => {
-                return (gapFilterState.cpf ? item.cpf.includes(gapFilterState.cpf) : true) &&
-                       (gapFilterState.produto ? item.produto === gapFilterState.produto : true) &&
-                       (gapFilterState.curso ? item.curso === gapFilterState.curso : true) &&
-                       (gapFilterState.semestre ? item.semestre === gapFilterState.semestre : true) &&
-                       (gapFilterState.metodologia ? item.metodologia === gapFilterState.metodologia : true) &&
-                       (gapFilterState.formaIngresso ? item.formaIngresso === gapFilterState.formaIngresso : true) &&
-                       (gapFilterState.matAcad !== 'all' ? String(item.matAcad) === gapFilterState.matAcad : true) &&
-                       (gapFilterState.gap === 'true' ? !item.matAcad : true);
-            }).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        }
-
-        function renderGapTable() {
-            const container = document.getElementById('gap-table-container');
-            const filteredData = filterGapData();
-            const docLabels = { rg: 'RG', cpf: 'CPF', diploma: 'Diploma', enem: 'ENEM', historico: 'Histórico', planoEnsino: 'Plano Ens.' };
-
-            let tableHTML = `<div class="overflow-x-auto bg-white rounded-xl shadow-2xl border">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-purple-50">
-                        <tr>
-                            <th class="px-4 py-2 text-left font-medium text-gray-500 uppercase">Candidato</th>
-                            <th class="px-4 py-2 text-left font-medium text-gray-500 uppercase">Detalhes</th>
-                            <th class="px-4 py-2 text-left font-medium text-gray-500 uppercase">Documentos</th>
-                            <th class="px-4 py-2 text-left font-medium text-gray-500 uppercase">Mat. Acad.</th>
-                            <th class="px-4 py-2 text-left font-medium text-gray-500 uppercase">Status</th>
-                            <th class="px-4 py-2 text-left font-medium text-gray-500 uppercase">Observação</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">`;
-
-            if (filteredData.length === 0) {
-                tableHTML += `<tr><td colspan="6" class="p-4 text-center text-gray-500">Nenhum candidato encontrado com os filtros aplicados.</td></tr>`;
-            } else {
-                filteredData.forEach(entry => {
-                    const statusClass = entry.matAcad ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-                    const statusText = entry.matAcad ? 'Matrícula Gerada' : 'Aguardando Documentos';
-                    
-                    tableHTML += `<tr id="gap-row-${entry.id}">
-                        <td class="p-4 align-top"><div class="font-bold">${entry.nome}</div><div>${entry.cpf}</div></td>
-                        <td class="p-4 align-top"><div><strong>Produto:</strong> ${entry.produto}</div><div><strong>Curso:</strong> ${entry.curso}</div><div><strong>Semestre:</strong> ${entry.semestre}</div><div><strong>Ingresso:</strong> ${entry.formaIngresso}</div></td>
-                        <td class="p-4 align-top">
-                            <div class="flex flex-wrap gap-2">
-                                ${Object.entries(docLabels).map(([key, label]) => `
-                                    <button class="doc-toggle ${entry.documentos[key] ? 'doc-sim' : 'doc-nao'}" data-id="${entry.id}" data-doc="${key}">${label}</button>
-                                `).join('')}
-                            </div>
-                        </td>
-                        <td class="p-4 align-top">
-                            <button class="doc-toggle ${entry.matAcad ? 'doc-sim' : 'doc-nao'}" data-id="${entry.id}" data-action="toggleMatAcad">${entry.matAcad ? 'Sim' : 'Não'}</button>
-                        </td>
-                        <td class="p-4 align-top"><span class="px-2 py-1 font-semibold leading-tight rounded-full ${statusClass}">${statusText}</span></td>
-                        <td class="p-4 align-top">
-                            <textarea class="obs-input w-full border rounded p-1" data-id="${entry.id}" rows="2">${entry.observacao || ''}</textarea>
-                        </td>
-                    </tr>`;
-                });
+            if (newPassword.length < 6) {
+                showMessage("A senha deve ter no mínimo 6 caracteres.");
+                return;
             }
-            tableHTML += '</tbody></table></div>';
-            container.innerHTML = tableHTML;
-            
-            container.addEventListener('click', (e) => {
-                const target = e.target;
-                if (target.matches('.doc-toggle')) {
-                    const { id, doc, action } = target.dataset;
-                    if (action === 'toggleMatAcad') {
-                        const currentStatus = !target.classList.contains('doc-nao');
-                        handleGapUpdate(id, { matAcad: !currentStatus });
-                    } else if (doc) {
-                        const currentStatus = !target.classList.contains('doc-nao');
-                        handleGapUpdate(id, { [`documentos.${doc}`]: !currentStatus });
-                    }
-                }
-            });
-            container.addEventListener('change', (e) => {
-                if (e.target.matches('.obs-input')) {
-                     handleGapUpdate(e.target.dataset.id, { observacao: e.target.value });
-                }
-            });
-        }
 
-        async function handleGapUpdate(id, dataToUpdate) {
             try {
-                await updateDoc(doc(db, GAP_COLLECTION_PATH, id), dataToUpdate);
+                await updatePassword(auth.currentUser, newPassword);
+                showMessage("Senha alterada com sucesso!");
+                passwordModal.classList.add('hidden');
+                changePasswordForm.reset();
             } catch (error) {
-                console.error("Erro ao atualizar GAP:", error);
-                alert("Ocorreu um erro ao salvar a alteração.");
+                showMessage(`Erro ao mudar a senha: ${error.message}`);
             }
+        });
+        
+        // Lidar com o estado de autenticação
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                authScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    currentUserRole = userData.role;
+                    currentUserUnit = userData.unidade;
+                    // Correção: Garante que admins sempre podem ver todas as bases
+                    currentUserCanViewAllUnits = userData.canViewAllUnits || (currentUserRole === 'admin');
+                    
+                    userInfoSpan.textContent = `${userData.name} (${userData.unidade})`;
+                    nomeAtendenteInput.value = userData.name;
+
+                    if (currentUserRole === 'admin') {
+                        adminPanel.classList.remove('hidden');
+                        filterUnidadeContainer.classList.remove('hidden');
+                        setupUsersListener();
+                    } else {
+                        adminPanel.classList.add('hidden');
+                        filterUnidadeContainer.classList.add('hidden');
+                    }
+                    
+                    setupDataListener();
+                }
+
+            } else {
+                currentUserId = null;
+                currentUserRole = null;
+                currentUserUnit = null;
+                currentUserCanViewAllUnits = false;
+                authScreen.classList.remove('hidden');
+                mainApp.classList.add('hidden');
+                
+                basesTableBody.innerHTML = '';
+            }
+        });
+
+        // Configura o listener para a coleção de usuários no painel do admin
+        function setupUsersListener() {
+            if (currentUserRole !== 'admin') return;
+
+            onSnapshot(collection(db, "users"), (snapshot) => {
+                const usersData = [];
+                snapshot.forEach(doc => {
+                    usersData.push({ ...doc.data(), id: doc.id });
+                });
+                renderUsersTable(usersData);
+            });
         }
 
-        // --- 7. Painel de Administração ---
-        function renderAdminPanel() {
-            const adminEl = document.getElementById('view-admin');
-            adminEl.innerHTML = `
-                <h2 class="text-3xl font-extrabold text-gray-900 border-b-4 border-blue-500 pb-2 mb-4">Gerenciamento de Usuários</h2>
-                <div class="overflow-x-auto bg-white rounded-xl shadow-2xl border border-gray-100 mb-8">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                                <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Perfil</th>
-                                <th class="p-4 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
-                            ${usersData.map(user => renderUserRow(user)).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <h2 class="text-3xl font-extrabold text-gray-900 border-b-4 border-red-500 pb-2 mb-4">Configurações do Sistema</h2>
-                 <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl border border-red-200 space-y-4">
-                    <h3 class="text-xl font-bold text-gray-800">Backup e Restauração</h3>
-                    <p class="text-sm text-gray-600">Faça o backup de todos os dados (Leads e GAP Acadêmico) ou restaure a partir de um arquivo de backup.</p>
-                    <div id="backup-message" class="hidden p-3 rounded-lg text-center font-medium"></div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <button id="btn-backup" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">${ICONS.DOWNLOAD} Fazer Backup Completo</button>
-                        </div>
-                        <div>
-                             <input type="file" id="restore-file-input" accept=".json" class="hidden"/>
-                             <button onclick="document.getElementById('restore-file-input').click()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">${ICONS.UPLOAD} Escolher Arquivo de Restore</button>
-                        </div>
-                    </div>
-                    <div id="restore-confirmation" class="hidden mt-4 p-4 bg-red-100 border border-red-300 rounded-lg text-center">
-                        <p class="font-bold text-red-700">ATENÇÃO: A restauração substituirá TODOS os dados atuais de Leads e GAP Acadêmico. Esta ação não pode ser desfeita.</p>
-                        <button id="btn-confirm-restore" class="mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Confirmar Restauração</button>
-                    </div>
-                 </div>
+        // Renderiza a tabela de usuários
+        function renderUsersTable(users) {
+            usersTableBody.innerHTML = '';
+            users.forEach(user => {
+                const isCurrentUser = user.id === currentUserId;
+                const row = `
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-6 text-left">${user.name}</td>
+                        <td class="py-3 px-6 text-left">${user.email}</td>
+                        <td class="py-3 px-6 text-left">${user.unidade}</td>
+                        <td class="py-3 px-6 text-center">
+                            <input type="checkbox" data-user-id="${user.id}" class="form-checkbox h-4 w-4 text-sky-600 rounded" ${user.canViewAllUnits ? 'checked' : ''} ${isCurrentUser || user.role === 'admin' ? 'disabled' : ''}>
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                            <button onclick="deleteUser('${user.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-xl font-semibold hover:bg-red-600 transition shadow-sm ${isCurrentUser || user.role === 'admin' ? 'opacity-50 cursor-not-allowed' : ''}" ${isCurrentUser || user.role === 'admin' ? 'disabled' : ''}>Excluir</button>
+                        </td>
+                    </tr>
                 `;
-            
-            document.getElementById('users-table-body').addEventListener('click', (e) => {
-                if (e.target.classList.contains('update-user-btn')) {
-                    handleUserUpdate(e.target.dataset.uid);
-                }
+                usersTableBody.innerHTML += row;
             });
-            document.getElementById('btn-backup').addEventListener('click', handleBackup);
-            document.getElementById('restore-file-input').addEventListener('change', (e) => {
-                if(e.target.files.length > 0) {
-                     document.getElementById('restore-confirmation').classList.remove('hidden');
-                }
+
+            // Adiciona event listeners para os checkboxes de permissão
+            usersTableBody.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const userId = e.target.dataset.userId;
+                    updateUserPermission(userId, e.target.checked);
+                });
             });
-            document.getElementById('btn-confirm-restore').addEventListener('click', handleRestore);
-        }
-
-        function renderUserRow(user) {
-            const isEditable = currentUser.role === ROLES.LIDER_FDV && user.id !== currentUser.uid;
-            return `
-                <tr class="hover:bg-blue-50">
-                    <td class="p-4">
-                        <input type="text" value="${user.name || ''}" class="name-input bg-gray-50 border rounded p-1 w-full" data-uid="${user.id}" ${!isEditable ? 'disabled' : ''}>
-                    </td>
-                    <td class="p-4 text-sm text-gray-600">${user.email}</td>
-                    <td class="p-4">
-                        <select class="role-selector bg-gray-50 border rounded p-1 w-full" data-uid="${user.id}" ${!isEditable ? 'disabled' : ''}>
-                            ${Object.values(ROLES).map(role => `<option value="${role}" ${user.role === role ? 'selected' : ''}>${role}</option>`).join('')}
-                        </select>
-                    </td>
-                    <td class="p-4 text-center">
-                        ${isEditable ? `<button class="update-user-btn bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600" data-uid="${user.id}">Salvar</button>` : 'Não Editável'}
-                    </td>
-                </tr>`;
-        }
-
-        async function handleUserUpdate(uid) {
-            const nameInput = document.querySelector(`.name-input[data-uid="${uid}"]`);
-            const roleSelect = document.querySelector(`.role-selector[data-uid="${uid}"]`);
-            const newName = nameInput.value.trim();
-            const newRole = roleSelect.value;
-            
-            if (!newName) {
-                alert('O nome do usuário não pode ficar em branco.');
-                return;
-            }
-
-            try {
-                const docRef = doc(db, USERS_COLLECTION_PATH, uid);
-                await updateDoc(docRef, { name: newName, role: newRole });
-                nameInput.classList.add('border-green-500', 'ring-green-500');
-                setTimeout(() => nameInput.classList.remove('border-green-500', 'ring-green-500'), 2000);
-            } catch (error) {
-                console.error("Erro ao atualizar perfil:", error);
-                nameInput.classList.add('border-red-500', 'ring-red-500');
-                setTimeout(() => nameInput.classList.remove('border-red-500', 'ring-red-500'), 2000);
-            }
-        }
-
-        async function handleBackup() {
-            const msgEl = document.getElementById('backup-message');
-            showMessage(msgEl, 'Gerando backup...', false);
-
-            try {
-                // Fetch all data
-                const leadsSnapshot = await getDocs(query(collection(db, LEADS_COLLECTION_PATH)));
-                const gapSnapshot = await getDocs(query(collection(db, GAP_COLLECTION_PATH)));
-
-                const backupData = {
-                    leads: leadsSnapshot.docs.map(d => ({id: d.id, ...d.data()})),
-                    gap_academico: gapSnapshot.docs.map(d => ({id: d.id, ...d.data()})),
-                    // Users are not backed up to avoid security issues with auth data.
-                };
-
-                // Create and download file
-                const jsonString = JSON.stringify(backupData, null, 2);
-                const blob = new Blob([jsonString], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                const date = new Date().toISOString().slice(0, 10);
-                a.download = `backup_gestao_leads_${date}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                showMessage(msgEl, 'Backup concluído e baixado com sucesso!', false);
-
-            } catch(error) {
-                console.error("Erro no backup:", error);
-                showMessage(msgEl, `Erro ao gerar backup: ${error.message}`, true);
-            }
-        }
-
-        async function handleRestore() {
-            const msgEl = document.getElementById('backup-message');
-            const fileInput = document.getElementById('restore-file-input');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                showMessage(msgEl, 'Nenhum arquivo selecionado para restauração.', true);
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const backupData = JSON.parse(event.target.result);
-
-                    if (!backupData.leads || !backupData.gap_academico) {
-                        throw new Error("Arquivo de backup inválido ou corrompido.");
-                    }
-                    
-                    showMessage(msgEl, 'Restaurando... Isso pode levar alguns minutos.', false);
-                    
-                    // Restore leads
-                    const leadsBatch = writeBatch(db);
-                    backupData.leads.forEach(leadDoc => {
-                        const docRef = doc(db, LEADS_COLLECTION_PATH, leadDoc.id);
-                        leadsBatch.set(docRef, leadDoc);
-                    });
-                    await leadsBatch.commit();
-
-                    // Restore GAP
-                    const gapBatch = writeBatch(db);
-                    backupData.gap_academico.forEach(gapDoc => {
-                        const docRef = doc(db, GAP_COLLECTION_PATH, gapDoc.id);
-                        gapBatch.set(docRef, gapDoc);
-                    });
-                    await gapBatch.commit();
-                    
-                    showMessage(msgEl, 'Restauração concluída com sucesso!', false);
-
-                } catch (error) {
-                     console.error("Erro na restauração:", error);
-                     showMessage(msgEl, `Erro ao restaurar: ${error.message}`, true);
-                } finally {
-                    fileInput.value = ''; // Reset file input
-                    document.getElementById('restore-confirmation').classList.add('hidden');
-                }
-            };
-            reader.readAsText(file);
         }
         
-        // --- Inicialização ---
-        window.addEventListener('load', initApp);
+        // Atualiza a permissão de um usuário
+        async function updateUserPermission(userId, canViewAllUnits) {
+            try {
+                await updateDoc(doc(db, "users", userId), { canViewAllUnits: canViewAllUnits });
+                showMessage('Permissão atualizada com sucesso.');
+            } catch (error) {
+                showMessage(`Erro ao atualizar a permissão: ${error.message}`);
+            }
+        }
+        
+        // Exclui um usuário
+        window.deleteUser = function(userId) {
+            showMessage('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.', true, async () => {
+                try {
+                    await deleteDoc(doc(db, "users", userId));
+                    showMessage('Usuário excluído com sucesso!');
+                } catch (error) {
+                    showMessage(`Erro ao excluir o usuário: ${error.message}`);
+                } finally {
+                    messageModal.classList.add('hidden');
+                }
+            });
+        };
+
+        // Função para configurar o listener de dados do Firestore
+        async function setupDataListener() {
+            let basesRef = collection(db, "bases");
+            let q;
+
+            // Para admins, buscamos todas as unidades antes de filtrar os dados
+            if (currentUserRole === 'admin' || currentUserCanViewAllUnits) {
+                const usersSnapshot = await getDocs(collection(db, "users"));
+                const allUnits = new Set();
+                usersSnapshot.forEach(doc => {
+                    allUnits.add(doc.data().unidade);
+                });
+
+                filterUnidadeSelect.innerHTML = '<option value="all">Todas</option>';
+                allUnits.forEach(unidade => {
+                    filterUnidadeSelect.innerHTML += `<option value="${unidade}">${unidade}</option>`;
+                });
+                
+                q = query(basesRef);
+            } else {
+                // Usuário normal: consulta apenas as bases da sua unidade
+                q = query(basesRef, where("unidade", "==", currentUserUnit));
+            }
+            
+            // Adiciona listener para a coleção de bases
+            onSnapshot(q, (snapshot) => {
+                allBasesData = [];
+                const atendentes = new Set();
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allBasesData.push({ ...data, id: doc.id });
+                    atendentes.add(data.nomeAtendente);
+                });
+
+                // Preenche o seletor de atendentes com os nomes encontrados
+                filterAtendenteSelect.innerHTML = '<option value="all">Todos</option>';
+                atendentes.forEach(atendente => {
+                    filterAtendenteSelect.innerHTML += `<option value="${atendente}">${atendente}</option>`;
+                });
+                
+                generateReport();
+            }, (error) => {
+                console.error("Erro ao carregar dados:", error);
+            });
+        }
+
+        // Função para renderizar a tabela de bases
+        function renderBasesTable(data) {
+            basesTableBody.innerHTML = '';
+            if (data.length === 0) {
+                basesTableBody.innerHTML = `<tr><td colspan="8" class="text-center py-4">Nenhum dado encontrado para esta seleção.</td></tr>`;
+            } else {
+                data.forEach((item) => {
+                    const row = `
+                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-6 text-left whitespace-nowrap">${item.data}</td>
+                            <td class="py-3 px-6 text-left">${item.nomeBase}</td>
+                            <td class="py-3 px-6 text-left">${item.nomeAtendente}</td>
+                            <td class="py-3 px-6 text-left">${item.meioDisparo}</td>
+                            <td class="py-3 px-6 text-left">${item.quantidadeDisparos}</td>
+                            <td class="py-3 px-6 text-left">${item.positivos}</td>
+                            <td class="py-3 px-6 text-left">${item.negativos}</td>
+                            <td class="py-3 px-6 text-center">
+                                <button onclick="deleteBase('${item.id}')" class="bg-red-500 text-white px-3 py-1 text-xs rounded-xl font-semibold hover:bg-red-600 transition shadow-sm">Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                    basesTableBody.innerHTML += row;
+                });
+            }
+        }
+
+        // Função para excluir uma base
+        window.deleteBase = function(docId) {
+            currentDeleteDocId = docId;
+            showMessage('Tem certeza que deseja excluir este relatório?', true, async () => {
+                try {
+                    await deleteDoc(doc(db, "bases", currentDeleteDocId));
+                    showMessage('Relatório excluído com sucesso!');
+                } catch (error) {
+                    showMessage(`Erro ao excluir o relatório: ${error.message}`);
+                } finally {
+                    messageModal.classList.add('hidden');
+                }
+            });
+        };
+
+        // Lidar com o envio do formulário de base
+        baseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const data = {
+                    data: document.getElementById('data').value,
+                    nomeBase: document.getElementById('nomeBase').value,
+                    nomeAtendente: nomeAtendenteInput.value,
+                    meioDisparo: document.getElementById('meioDisparo').value,
+                    quantidadeDisparos: parseInt(document.getElementById('quantidadeDisparos').value),
+                    positivos: parseInt(document.getElementById('positivos').value),
+                    negativos: parseInt(document.getElementById('negativos').value),
+                    evidencia: document.getElementById('evidencia').value || "",
+                    userId: currentUserId,
+                    unidade: currentUserUnit,
+                };
+                await addDoc(collection(db, "bases"), data);
+                showMessage('Dados salvos com sucesso!');
+                baseForm.reset();
+            } catch (error) {
+                showMessage(`Erro ao salvar dados: ${error.message}`);
+            }
+        });
+
+        // Lidar com o logout
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                showMessage(`Erro ao sair: ${error.message}`);
+            }
+        });
+
+        // Lógica de geração de relatórios
+        reportDiarioBtn.addEventListener('click', () => { generateReport(); });
+        reportSemanalBtn.addEventListener('click', () => { generateReport(); });
+        reportAnualBtn.addEventListener('click', () => { generateReport(); });
+        filterAtendenteSelect.addEventListener('change', () => { generateReport(); });
+        document.getElementById('filter-meio').addEventListener('change', () => { generateReport(); });
+        if (filterUnidadeSelect) {
+            filterUnidadeSelect.addEventListener('change', () => { generateReport(); });
+        }
+        filterStartDateInput.addEventListener('change', () => { generateReport(); });
+        filterEndDateInput.addEventListener('change', () => { generateReport(); });
+
+        function generateReport() {
+            const filteredData = filterData();
+            
+            let totalDisparos = 0;
+            let totalPositivos = 0;
+            let totalNegativos = 0;
+
+            filteredData.forEach(item => {
+                totalDisparos += item.quantidadeDisparos;
+                totalPositivos += item.positivos;
+                totalNegativos += item.negativos;
+            });
+            
+            document.getElementById('summary-disparos').textContent = totalDisparos;
+            document.getElementById('summary-positivos').textContent = totalPositivos;
+            document.getElementById('summary-negativos').textContent = totalNegativos;
+            
+            renderBasesTable(filteredData);
+        }
+
+        function filterData() {
+            let data = [...allBasesData];
+            const atendente = filterAtendenteSelect.value;
+            const meio = document.getElementById('filter-meio').value;
+            const unidade = filterUnidadeSelect ? filterUnidadeSelect.value : currentUserUnit;
+            const startDate = filterStartDateInput.value;
+            const endDate = filterEndDateInput.value;
+
+            if (atendente !== 'all') {
+                data = data.filter(base => base.nomeAtendente === atendente);
+            }
+            if (meio !== 'all') {
+                data = data.filter(base => base.meioDisparo === meio);
+            }
+            if (unidade !== 'all') {
+                data = data.filter(base => base.unidade === unidade);
+            }
+            if (startDate) {
+                data = data.filter(base => base.data >= startDate);
+            }
+            if (endDate) {
+                data = data.filter(base => base.data <= endDate);
+            }
+            return data;
+        }
+
+        // Lógica de exportação para PDF e Excel
+        exportPdfBtn.addEventListener('click', async () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'a4');
+            const margin = 20;
+            const basesTable = document.getElementById('bases-table-body');
+            let y = margin;
+
+            // Título do relatório
+            doc.setFontSize(18);
+            doc.text("Relatório de Bases", margin, y);
+            y += 20;
+
+            // Adiciona o resumo do relatório
+            doc.setFontSize(14);
+            doc.text("Resumo:", margin, y);
+            y += 15;
+            const summaryText = document.getElementById('report-summary').innerText;
+            doc.setFontSize(10);
+            const summaryLines = doc.splitTextToSize(summaryText, 550);
+            doc.text(summaryLines, margin, y);
+            y += doc.getTextDimensions(summaryLines).h + 20;
+
+            // Adiciona a tabela
+            const headers = [['Data', 'Base', 'Atendente', 'Meio', 'Disparos', 'Positivos', 'Negativos']];
+            const data = Array.from(basesTable.rows).map(row => Array.from(row.cells).slice(0, 7).map(cell => cell.innerText));
+            
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: y,
+                theme: 'striped',
+                headStyles: { fillColor: [59, 130, 246] },
+                margin: { top: margin, bottom: margin, left: margin, right: margin }
+            });
+
+            doc.save("Relatorio_de_Bases.pdf");
+            showMessage('Relatório em PDF gerado com sucesso!');
+        });
+
+        exportExcelBtn.addEventListener('click', () => {
+            const data = filterData();
+            if (data.length === 0) {
+                showMessage('Não há dados para exportar.');
+                return;
+            }
+
+            const header = ["Data", "Nome da Base", "Nome do Atendente", "Meio de Disparo", "Quantidade de Disparos", "Positivos", "Negativos", "Evidência"];
+            const rows = data.map(item => [
+                item.data,
+                item.nomeBase,
+                item.nomeAtendente,
+                item.meioDisparo,
+                item.quantidadeDisparos,
+                item.positivos,
+                item.negativos,
+                item.evidencia
+            ]);
+
+            let csvContent = "data:text/csv;charset=utf-8," + header.join(";") + "\n" + rows.map(row => row.join(";")).join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "relatorio_bases.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showMessage('Relatório em Excel (CSV) gerado com sucesso!');
+        });
     </script>
 </body>
 </html>
-
