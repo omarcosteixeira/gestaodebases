@@ -453,7 +453,7 @@
         }
         loginForm.addEventListener('submit', handleLogin);
 
-        // Lidar com o registro
+        // Lidar com o registro (Implementação de retry para o erro "client is offline")
         async function handleRegister(e) {
             e.preventDefault();
             const name = document.getElementById('register-name').value;
@@ -462,8 +462,22 @@
             const unidade = document.getElementById('register-unidade').value;
 
             try {
-                // Checa se já existe um admin para o app.
-                const adminDoc = await getDoc(doc(db, "app_state", "admin"));
+                let adminDoc;
+                const maxRetries = 3;
+                
+                // 1. Tentativa de obter o status do admin com retries
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        adminDoc = await getDoc(doc(db, "app_state", "admin"));
+                        break; // Sucesso, sai do loop
+                    } catch (error) {
+                        if (i === maxRetries - 1) throw error; // Última tentativa falhou, lança o erro
+                        console.warn(`Tentativa ${i + 1} de obter documento do admin falhou. Retrying...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Espera com backoff
+                    }
+                }
+
+                // A partir daqui, a conexão deve estar estável (ou o erro será relançado)
                 let isFirstUser = !adminDoc.exists();
 
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -939,12 +953,14 @@
         // Exportação para PDF
         exportPdfBtn.addEventListener('click', async () => {
             const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'a4');
+
+            // Verifica se a biblioteca principal e o plugin autoTable foram carregados corretamente
             if (typeof jsPDF === 'undefined' || typeof doc.autoTable === 'undefined') {
-                showMessage('Erro: Bibliotecas de PDF não carregadas corretamente.');
-                return;
+                 showMessage('Erro: Bibliotecas de PDF (jsPDF ou autoTable) não carregadas corretamente. Tente recarregar a página.');
+                 return;
             }
 
-            const doc = new jsPDF('p', 'pt', 'a4');
             const margin = 40;
             const pageWidth = doc.internal.pageSize.getWidth();
             const filteredData = filterData();
